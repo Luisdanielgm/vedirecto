@@ -1,0 +1,11 @@
+node_modules
+.next
+data
+.git
+.env
+.env.local
+.env*.local
+*.sqlite
+*.sqlite-*
+*.log
+README.md

@@ -1,0 +1,23 @@
+# dependencias
+/node_modules
+
+# build
+/.next
+/out
+
+# datos (SQLite vive en volumen, nunca en el repo)
+/data
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db
+
+# secretos
+.env
+.env.local
+.env*.local
+
+# varios
+.DS_Store
+*.log

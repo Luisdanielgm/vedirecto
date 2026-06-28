@@ -1,0 +1,24 @@
+# Producción en Dokploy: Traefik enruta el dominio → contenedor:3000.
+# No se publican puertos al host; el contenedor se une a la red de Dokploy.
+services:
+  vedirecto:
+    build: .
+    container_name: vedirecto
+    restart: unless-stopped
+    environment:
+      - DATA_DIR=/app/data
+      # Definí estas en el panel Environment de Dokploy (NUNCA en el repo).
+      - CAUCE_API_KEY=${CAUCE_API_KEY:?defini CAUCE_API_KEY en Dokploy}
+      - CAUCE_BASE_URL=${CAUCE_BASE_URL:-https://api.cauce.me/v1}
+      - CAUCE_MODEL=${CAUCE_MODEL:-deepseek-v4-flash}
+    volumes:
+      - vedirecto-data:/app/data
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
+
+volumes:
+  vedirecto-data:

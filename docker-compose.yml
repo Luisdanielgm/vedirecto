@@ -1,0 +1,18 @@
+# Local: probar la imagen como en producción (puerto publicado al host).
+services:
+  vedirecto:
+    build: .
+    container_name: vedirecto
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATA_DIR=/app/data
+      - CAUCE_API_KEY=${CAUCE_API_KEY:?defini CAUCE_API_KEY}
+      - CAUCE_BASE_URL=${CAUCE_BASE_URL:-https://api.cauce.me/v1}
+      - CAUCE_MODEL=${CAUCE_MODEL:-deepseek-v4-flash}
+    volumes:
+      - vedirecto-data:/app/data
+
+volumes:
+  vedirecto-data:
