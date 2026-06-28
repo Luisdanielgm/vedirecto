@@ -3,7 +3,6 @@
 services:
   vedirecto:
     build: .
-    container_name: vedirecto
     restart: unless-stopped
     environment:
       - DATA_DIR=/app/data
