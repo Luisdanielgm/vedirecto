@@ -9,13 +9,10 @@ export default function Shell({ sitios: inicial, noticias }) {
 
   return (
     <div className="wrap">
-      <header className="top">
-        <div className="brand">
-          <h1>VeDirecto</h1>
-          <p>Directorio de sitios de ayuda · Venezuela</p>
-        </div>
+      <div className="bar">
+        <span className="wordmark">Ve<b>Directo</b></span>
         <button className="add-btn" onClick={() => setModal(true)}>+ Agregar sitio</button>
-      </header>
+      </div>
 
       <nav className="tabs">
         <button className={tab === 'directorio' ? 'tab active' : 'tab'} onClick={() => setTab('directorio')}>
@@ -29,19 +26,24 @@ export default function Shell({ sitios: inicial, noticias }) {
       {tab === 'directorio' ? (
         <DirectorioPanel sitios={sitios} />
       ) : (
-        <div className="list">
-          {noticias.map((n) => (
-            <article className="card" key={n.id}>
-              <div className="row">
-                <h3>{n.titulo}</h3>
-                {n.fecha && <span className="fecha">{n.fecha}</span>}
-              </div>
-              {n.resumen && <p className="desc">{n.resumen}</p>}
-              {n.url && <div className="meta"><a className="visit" href={n.url} target="_blank" rel="noreferrer">Leer</a></div>}
-            </article>
-          ))}
-          {noticias.length === 0 && <p className="empty">Todavía no hay noticias.</p>}
-        </div>
+        <section>
+          <p className="eyebrow">Noticias</p>
+          <h1 className="headline">Lo que está pasando</h1>
+          <p className="lead">Información reciente sobre la emergencia y la respuesta ciudadana.</p>
+          <div className="list">
+            {noticias.map((n) => (
+              <article className="card" key={n.id}>
+                <div className="row">
+                  <h3>{n.titulo}</h3>
+                  {n.fecha && <span className="fecha">{n.fecha}</span>}
+                </div>
+                {n.resumen && <p className="desc">{n.resumen}</p>}
+                {n.url && <div className="meta"><a className="visit" href={n.url} target="_blank" rel="noreferrer">Leer</a></div>}
+              </article>
+            ))}
+            {noticias.length === 0 && <p className="empty">Todavía no hay noticias.</p>}
+          </div>
+        </section>
       )}
 
       <footer className="foot">
@@ -56,7 +58,7 @@ export default function Shell({ sitios: inicial, noticias }) {
 function AddModal({ onClose, onAdded }) {
   const [url, setUrl] = useState('')
   const [busy, setBusy] = useState(false)
-  const [msg, setMsg] = useState(null) // {tipo, texto}
+  const [msg, setMsg] = useState(null)
 
   const submit = async (e) => {
     e.preventDefault()
@@ -88,21 +90,13 @@ function AddModal({ onClose, onAdded }) {
     <div className="backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h2>Agregar sitio</h2>
-        <p className="hint">Pegá el link. Un análisis automático extrae los datos y revisa que sea seguro.</p>
+        <p className="hint">Pega el link. Un análisis automático extrae los datos y revisa que sea seguro.</p>
         <form className="modal-form" onSubmit={submit}>
-          <input
-            type="url"
-            placeholder="https://…"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            autoFocus
-          />
+          <input type="url" placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} autoFocus />
           <button type="submit" disabled={busy}>{busy ? 'Analizando…' : 'Agregar'}</button>
         </form>
         {msg && <p className={`modal-msg ${msg.tipo}`}>{msg.texto}</p>}
-        <div className="modal-close">
-          <button type="button" onClick={onClose}>Cerrar</button>
-        </div>
+        <div className="modal-close"><button type="button" onClick={onClose}>Cerrar</button></div>
       </div>
     </div>
   )

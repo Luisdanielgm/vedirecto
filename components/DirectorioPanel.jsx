@@ -4,13 +4,21 @@ import { useMemo, useState } from 'react'
 const norm = (s) =>
   (s ?? '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
+// Paleta propia para las categorías (color estable por nombre).
+const PALETTE = ['#e0b341', '#6ba3e0', '#e07a9b', '#5bc08a', '#c98ae0', '#e0915b', '#5bc0c0', '#d96b6b', '#8aa0e0', '#aab0b8']
+function colorFor(cat) {
+  let h = 0
+  for (const ch of cat) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return PALETTE[h % PALETTE.length]
+}
+
 export default function DirectorioPanel({ sitios }) {
   const [query, setQuery] = useState('')
-  const [activeTags, setActiveTags] = useState([])
+  const [cat, setCat] = useState(null) // null = Todos
 
-  const allTags = useMemo(() => {
+  const cats = useMemo(() => {
     const set = new Set()
-    sitios.forEach((s) => (s.tags || []).forEach((t) => set.add(t)))
+    sitios.forEach((s) => s.categoria && set.add(s.categoria))
     return [...set].sort((a, b) => a.localeCompare(b, 'es'))
   }, [sitios])
 
@@ -19,33 +27,49 @@ export default function DirectorioPanel({ sitios }) {
     return sitios.filter((s) => {
       const hay = norm([s.nombre, s.descripcion, s.categoria, (s.tags || []).join(' ')].join(' '))
       const okQ = !q || hay.includes(q)
-      const okT = activeTags.length === 0 || (s.tags || []).some((t) => activeTags.includes(t))
-      return okQ && okT
+      const okC = !cat || s.categoria === cat
+      return okQ && okC
     })
-  }, [sitios, query, activeTags])
-
-  const toggleTag = (t) =>
-    setActiveTags((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]))
+  }, [sitios, query, cat])
 
   return (
-    <>
-      <input
-        className="search"
-        placeholder="Buscar por nombre, descripción o etiqueta…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+    <section>
+      <p className="eyebrow">Directorio</p>
+      <h1 className="headline">Sitios que ayudan</h1>
+      <p className="lead">
+        {sitios.length} {sitios.length === 1 ? 'iniciativa' : 'iniciativas'} organizadas por categoría.
+        Busca por nombre o filtra para encontrar lo que necesitas.
+      </p>
 
-      {allTags.length > 0 && (
-        <div className="chips">
-          {allTags.map((t) => (
+      <div className="searchbar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          className="search"
+          placeholder="Buscar por nombre o descripción…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {cats.length > 0 && (
+        <div className="pills">
+          <button
+            className={cat === null ? 'pill active' : 'pill'}
+            style={{ '--c': '#fafafa' }}
+            onClick={() => setCat(null)}
+          >
+            Todos
+          </button>
+          {cats.map((c) => (
             <button
-              key={t}
-              type="button"
-              className={activeTags.includes(t) ? 'chip active' : 'chip'}
-              onClick={() => toggleTag(t)}
+              key={c}
+              className={cat === c ? 'pill active' : 'pill'}
+              style={{ '--c': colorFor(c) }}
+              onClick={() => setCat(cat === c ? null : c)}
             >
-              {t}
+              {c}
             </button>
           ))}
         </div>
@@ -71,8 +95,8 @@ export default function DirectorioPanel({ sitios }) {
             )}
           </article>
         ))}
-        {filtered.length === 0 && <p className="empty">No hay sitios todavía. Agregá el primero.</p>}
+        {filtered.length === 0 && <p className="empty">No hay sitios todavía. Agregá el primero con “+ Agregar sitio”.</p>}
       </div>
-    </>
+    </section>
   )
 }
