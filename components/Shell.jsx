@@ -7,6 +7,16 @@ export default function Shell({ sitios: inicial, noticias }) {
   const [tab, setTab] = useState('directorio')
   const [sitios, setSitios] = useState(inicial)
   const [modal, setModal] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/me')
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(!!d.isAdmin))
+      .catch(() => {})
+  }, [])
+
+  const onDeleted = (id) => setSitios((p) => p.filter((s) => s.id !== id))
 
   return (
     <div className="wrap">
@@ -25,7 +35,7 @@ export default function Shell({ sitios: inicial, noticias }) {
       </nav>
 
       {tab === 'directorio' ? (
-        <DirectorioPanel sitios={sitios} />
+        <DirectorioPanel sitios={sitios} isAdmin={isAdmin} onDeleted={onDeleted} />
       ) : (
         <section>
           <h1 className="headline">Lo que está pasando</h1>

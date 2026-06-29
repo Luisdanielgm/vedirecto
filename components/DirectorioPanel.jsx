@@ -12,9 +12,16 @@ function colorFor(cat) {
   return PALETTE[h % PALETTE.length]
 }
 
-export default function DirectorioPanel({ sitios }) {
+export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted }) {
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState(null) // null = Todos
+
+  const borrar = async (s) => {
+    if (!confirm(`¿Borrar "${s.nombre}" del directorio?`)) return
+    const r = await fetch(`/api/sitios/${s.id}`, { method: 'DELETE' })
+    if (r.ok) onDeleted?.(s.id)
+    else alert('No se pudo borrar.')
+  }
 
   const cats = useMemo(() => {
     const set = new Set()
@@ -95,11 +102,12 @@ export default function DirectorioPanel({ sitios }) {
                     {s.tags.map((t) => <span className="tag" key={t}>{t}</span>)}
                   </div>
                 )}
-                {s.url && (
-                  <div className="meta">
-                    <a className="visit" href={s.url} target="_blank" rel="noreferrer">Visitar</a>
-                  </div>
-                )}
+                <div className="meta">
+                  {s.url && <a className="visit" href={s.url} target="_blank" rel="noreferrer">Visitar</a>}
+                  {isAdmin && (
+                    <button className="del" onClick={() => borrar(s)} title="Borrar">Borrar</button>
+                  )}
+                </div>
               </div>
             </div>
           </article>
