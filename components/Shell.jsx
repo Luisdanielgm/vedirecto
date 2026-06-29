@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import DirectorioPanel from './DirectorioPanel'
+import { createClient } from '../lib/supabase/client'
 
 export default function Shell({ sitios: inicial, noticias }) {
   const [tab, setTab] = useState('directorio')
@@ -57,6 +58,40 @@ function AddModal({ onClose, onAdded }) {
   const [url, setUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
+  const [user, setUser] = useState(null)
+  const [authReady, setAuthReady] = useState(false)
+  const [configured, setConfigured] = useState(true)
+
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      setConfigured(false)
+      setAuthReady(true)
+      return
+    }
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user)
+      setAuthReady(true)
+    })
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => sub.subscription.unsubscribe()
+  }, [])
+
+  const login = async () => {
+    const supabase = createClient()
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    })
+  }
+
+  const logout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    setUser(null)
+  }
 
   const submit = async (e) => {
     e.preventDefault()
@@ -88,13 +123,32 @@ function AddModal({ onClose, onAdded }) {
     <div className="backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h2>Agregar sitio</h2>
-        <p className="hint">Pega el link. Un análisis automático extrae los datos y revisa que sea seguro.</p>
-        <form className="modal-form" onSubmit={submit}>
-          <input type="url" placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} autoFocus />
-          <button type="submit" disabled={busy}>{busy ? 'Analizando…' : 'Agregar'}</button>
-        </form>
+
+        {!authReady ? (
+          <p className="hint">Cargando…</p>
+        ) : !configured ? (
+          <p className="hint">El login con Google todavía no está configurado.</p>
+        ) : !user ? (
+          <>
+            <p className="hint">Iniciá sesión con Google para agregar un sitio. El análisis lo hace una IA, por eso pedimos login.</p>
+            <button className="google-btn" onClick={login}>Iniciar sesión con Google</button>
+          </>
+        ) : (
+          <>
+            <p className="hint">Pega el link. Una IA extrae los datos y revisa que sea seguro.</p>
+            <form className="modal-form" onSubmit={submit}>
+              <input type="url" placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} autoFocus />
+              <button type="submit" disabled={busy}>{busy ? 'Analizando…' : 'Agregar'}</button>
+            </form>
+          </>
+        )}
+
         {msg && <p className={`modal-msg ${msg.tipo}`}>{msg.texto}</p>}
-        <div className="modal-close"><button type="button" onClick={onClose}>Cerrar</button></div>
+
+        <div className="modal-close">
+          {user && <button type="button" onClick={logout}>Cerrar sesión</button>}
+          <button type="button" onClick={onClose}>Cerrar</button>
+        </div>
       </div>
     </div>
   )

@@ -108,7 +108,12 @@ a { color: inherit; text-decoration: none; }
 .modal-msg { margin: 14px 0 0; font-size: 13px; line-height: 1.5; }
 .modal-msg.ok { color: var(--text); }
 .modal-msg.err { color: var(--muted); }
-.modal-close { margin-top: 18px; text-align: right; }
+.google-btn {
+  width: 100%; padding: 12px 16px; background: var(--text); color: #0a0a0a;
+  border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.google-btn:hover { opacity: .9; }
+.modal-close { margin-top: 18px; display: flex; justify-content: flex-end; gap: 16px; }
 .modal-close button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; }
 .modal-close button:hover { color: var(--text); }
 

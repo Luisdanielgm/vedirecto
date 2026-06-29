@@ -2,6 +2,7 @@ import { listSitios, getSitioByUrl, addSitio } from '../../../lib/db'
 import { scrapeSite } from '../../../lib/scrape'
 import { analizarSitio } from '../../../lib/analyze'
 import { rateLimit, clientIp } from '../../../lib/ratelimit'
+import { createClient } from '../../../lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +23,14 @@ export async function POST(req) {
       { error: `Demasiados intentos. Probá de nuevo en ${rl.retryAfter}s.` },
       { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
     )
+  }
+
+  // Candado: solo usuarios logueados con Google pueden gastar el LLM.
+  // La sesión viaja por cookie; el servidor la valida (no se confía en el cliente).
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return Response.json({ error: 'Iniciá sesión con Google para agregar un sitio.' }, { status: 401 })
   }
 
   let body
