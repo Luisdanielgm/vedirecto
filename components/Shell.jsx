@@ -23,7 +23,10 @@ export default function Shell({ sitios: inicial, noticias }) {
     <div className="wrap">
       <div className="bar">
         <span className="wordmark">Ve<b>Directo</b></span>
-        <button className="add-btn" onClick={() => setModal(true)}>+ Agregar sitio</button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {isAdmin && <a className="admin-link" href="/admin">Admin</a>}
+          <button className="add-btn" onClick={() => setModal(true)}>+ Agregar sitio</button>
+        </div>
       </div>
 
       <nav className="tabs">

@@ -123,6 +123,22 @@ a { color: inherit; text-decoration: none; }
 .modal-close button:hover { color: var(--text); }
 
 /* --- Footer --- */
+.admin-link { font-size: 13px; color: var(--muted); border: 1px solid var(--border); padding: 8px 12px; border-radius: 999px; }
+.admin-link:hover { color: var(--text); border-color: var(--border-strong); }
+
+/* --- Panel admin --- */
+.admin-section { margin: 28px 0; }
+.admin-section h2 { font-size: 18px; margin: 0 0 8px; }
+.admin-ta { width: 100%; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 14px; font-family: ui-monospace, monospace; resize: vertical; margin-bottom: 10px; }
+.admin-ta:focus { outline: none; border-color: var(--border-strong); }
+.report { margin-top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.report ul { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+.report li { margin: 3px 0; }
+.estado { font-size: 11px; padding: 2px 9px; border-radius: 999px; white-space: nowrap; border: 1px solid var(--border); }
+.estado.publicado { color: var(--ok); border-color: var(--ok); }
+.estado.pendiente { color: var(--warn); border-color: var(--warn); }
+.estado.rechazado { color: var(--danger); border-color: var(--danger); }
+
 .foot { margin-top: 56px; text-align: center; color: var(--muted); font-size: 12px; }
 .foot code { background: var(--surface-2); padding: 2px 7px; border-radius: 5px; font-size: 11px; }
 
