@@ -14,7 +14,7 @@ function colorFor(cat) {
 
 export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted, onUpdated }) {
   const [query, setQuery] = useState('')
-  const [cat, setCat] = useState(null) // null = Todos
+  const [cat, setCat] = useState(null)
   const [busyId, setBusyId] = useState(null)
 
   const borrar = async (s) => {
@@ -73,11 +73,7 @@ export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted, on
 
       {cats.length > 0 && (
         <div className="pills">
-          <button
-            className={cat === null ? 'pill active' : 'pill'}
-            style={{ '--c': '#fafafa' }}
-            onClick={() => setCat(null)}
-          >
+          <button className={cat === null ? 'pill active' : 'pill'} style={{ '--c': '#fafafa' }} onClick={() => setCat(null)}>
             Todos
           </button>
           {cats.map((c) => (
@@ -93,54 +89,81 @@ export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted, on
         </div>
       )}
 
-      <div className="list">
+      <div className="grid2">
         {filtered.map((s) => (
-          <article className="card" key={s.id ?? s.url}>
-            <div className="card-body">
-              {s.imagen && (
-                <img
-                  className="thumb"
-                  src={s.imagen}
-                  alt=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              )}
-              <div className="card-main">
-                <h3>{s.nombre}</h3>
-                {(s.categorias || []).length > 0 && (
-                  <div className="cats">
-                    {s.categorias.map((c) => (
-                      <span className="cat-chip" key={c} style={{ '--c': colorFor(c) }}>{c}</span>
-                    ))}
-                  </div>
-                )}
-                {s.descripcion && <p className="desc">{s.descripcion}</p>}
-                {s.tags?.length > 0 && (
-                  <div className="tags">
-                    {s.tags.map((t) => <span className="tag" key={t}>{t}</span>)}
-                  </div>
-                )}
-                <div className="meta">
-                  {s.url && <a className="visit" href={s.url} target="_blank" rel="noreferrer">Visitar</a>}
-                  {isAdmin && (
-                    <>
-                      <button className="del" onClick={() => reindexar(s)} disabled={busyId === s.id}>
-                        {busyId === s.id ? 'Reindexando…' : 'Reindexar'}
-                      </button>
-                      <button className="del" onClick={() => borrar(s)} title="Borrar">Borrar</button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </article>
+          <Card
+            key={s.id ?? s.url}
+            s={s}
+            isAdmin={isAdmin}
+            busy={busyId === s.id}
+            onBorrar={() => borrar(s)}
+            onReindex={() => reindexar(s)}
+          />
         ))}
         {filtered.length === 0 && <p className="empty">No hay sitios todavía. Agregá el primero con “+ Agregar sitio”.</p>}
       </div>
     </section>
+  )
+}
+
+function Card({ s, isAdmin, busy, onBorrar, onReindex }) {
+  const [openDesc, setOpenDesc] = useState(false)
+  const [openTags, setOpenTags] = useState(false)
+  const [imgErr, setImgErr] = useState(false)
+
+  const visit = () => { if (s.url) window.open(s.url, '_blank', 'noopener,noreferrer') }
+  const stop = (e) => e.stopPropagation()
+  const tags = s.tags || []
+  const cats = s.categorias || []
+  const shownTags = openTags ? tags : tags.slice(0, 3)
+  const longDesc = (s.descripcion || '').length > 120
+
+  return (
+    <article
+      className="card card-link"
+      onClick={visit}
+      onKeyDown={(e) => { if (e.key === 'Enter') visit() }}
+      role="link"
+      tabIndex={0}
+    >
+      <div className="card-top">
+        {s.imagen && !imgErr && (
+          <img className="thumb" src={s.imagen} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setImgErr(true)} />
+        )}
+        <div className="card-head">
+          <h3>{s.nombre}</h3>
+          {cats.length > 0 && (
+            <div className="cats">
+              {cats.map((c) => <span className="cat-chip" key={c} style={{ '--c': colorFor(c) }}>{c}</span>)}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {s.descripcion && <p className={openDesc ? 'desc' : 'desc clamp'}>{s.descripcion}</p>}
+      {longDesc && (
+        <button className="link-mini" onClick={(e) => { stop(e); setOpenDesc((v) => !v) }}>
+          {openDesc ? 'ver menos' : 'ver más'}
+        </button>
+      )}
+
+      {tags.length > 0 && (
+        <div className="tags-row">
+          {shownTags.map((t) => <span className="tag" key={t}>{t}</span>)}
+          {tags.length > 3 && (
+            <button className="tag more" onClick={(e) => { stop(e); setOpenTags((v) => !v) }}>
+              {openTags ? '− menos' : `+${tags.length - 3}`}
+            </button>
+          )}
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="admin-actions" onClick={stop}>
+          <button className="del" onClick={onReindex} disabled={busy}>{busy ? 'Reindexando…' : 'Reindexar'}</button>
+          <button className="del" onClick={onBorrar}>Borrar</button>
+        </div>
+      )}
+    </article>
   )
 }
