@@ -114,6 +114,9 @@ function Card({ s, isAdmin, busy, onBorrar, onReindex }) {
   const stop = (e) => e.stopPropagation()
   const tags = s.tags || []
   const cats = s.categorias || []
+  let host = ''
+  try { host = new URL(s.url).hostname } catch {}
+  const favicon = host ? `https://www.google.com/s2/favicons?domain=${host}&sz=64` : ''
   const shownTags = openTags ? tags : tags.slice(0, 3)
   const longDesc = (s.descripcion || '').length > 120
 
@@ -126,7 +129,12 @@ function Card({ s, isAdmin, busy, onBorrar, onReindex }) {
       tabIndex={0}
     >
       <div className="card-body">
-        <h3>{s.nombre}</h3>
+        <div className="card-head-row">
+          {favicon && (
+            <img className="favicon" src={favicon} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+          )}
+          <h3>{s.nombre}</h3>
+        </div>
         {cats.length > 0 && (
           <div className="cats">
             {cats.map((c) => <span className="cat-chip" key={c} style={{ '--c': colorFor(c) }}>{c}</span>)}
