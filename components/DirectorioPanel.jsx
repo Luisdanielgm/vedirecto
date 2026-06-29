@@ -18,16 +18,16 @@ export default function DirectorioPanel({ sitios }) {
 
   const cats = useMemo(() => {
     const set = new Set()
-    sitios.forEach((s) => s.categoria && set.add(s.categoria))
+    sitios.forEach((s) => (s.categorias || []).forEach((c) => set.add(c)))
     return [...set].sort((a, b) => a.localeCompare(b, 'es'))
   }, [sitios])
 
   const filtered = useMemo(() => {
     const q = norm(query)
     return sitios.filter((s) => {
-      const hay = norm([s.nombre, s.descripcion, s.categoria, (s.tags || []).join(' ')].join(' '))
+      const hay = norm([s.nombre, s.descripcion, (s.categorias || []).join(' '), (s.tags || []).join(' ')].join(' '))
       const okQ = !q || hay.includes(q)
-      const okC = !cat || s.categoria === cat
+      const okC = !cat || (s.categorias || []).includes(cat)
       return okQ && okC
     })
   }, [sitios, query, cat])
@@ -76,21 +76,32 @@ export default function DirectorioPanel({ sitios }) {
       <div className="list">
         {filtered.map((s) => (
           <article className="card" key={s.id ?? s.url}>
-            <div className="row">
-              <h3>{s.nombre}</h3>
-              {s.categoria && <span className="cat">{s.categoria}</span>}
+            <div className="card-body">
+              {s.imagen && (
+                <img className="thumb" src={s.imagen} alt="" loading="lazy" referrerPolicy="no-referrer" />
+              )}
+              <div className="card-main">
+                <h3>{s.nombre}</h3>
+                {(s.categorias || []).length > 0 && (
+                  <div className="cats">
+                    {s.categorias.map((c) => (
+                      <span className="cat-chip" key={c} style={{ '--c': colorFor(c) }}>{c}</span>
+                    ))}
+                  </div>
+                )}
+                {s.descripcion && <p className="desc">{s.descripcion}</p>}
+                {s.tags?.length > 0 && (
+                  <div className="tags">
+                    {s.tags.map((t) => <span className="tag" key={t}>{t}</span>)}
+                  </div>
+                )}
+                {s.url && (
+                  <div className="meta">
+                    <a className="visit" href={s.url} target="_blank" rel="noreferrer">Visitar</a>
+                  </div>
+                )}
+              </div>
             </div>
-            {s.descripcion && <p className="desc">{s.descripcion}</p>}
-            {s.tags?.length > 0 && (
-              <div className="tags">
-                {s.tags.map((t) => <span className="tag" key={t}>{t}</span>)}
-              </div>
-            )}
-            {s.url && (
-              <div className="meta">
-                <a className="visit" href={s.url} target="_blank" rel="noreferrer">Visitar</a>
-              </div>
-            )}
           </article>
         ))}
         {filtered.length === 0 && <p className="empty">No hay sitios todavía. Agregá el primero con “+ Agregar sitio”.</p>}

@@ -77,7 +77,7 @@ export async function POST(req) {
 
   // 3) Decisión conservadora: solo "seguro" se publica.
   if (analisis.riesgo !== 'seguro') {
-    addSitio({ ...analisis, finalUrl: scraped.finalUrl }) // queda como pendiente/rechazado (no visible)
+    addSitio({ ...analisis, finalUrl: scraped.finalUrl, imagen: scraped.imagen }) // pendiente/rechazado (no visible)
     return Response.json(
       {
         error: `El sitio no se publicó (riesgo: ${analisis.riesgo}). ${analisis.motivo_riesgo}`,
@@ -87,9 +87,14 @@ export async function POST(req) {
     )
   }
 
-  const { id, estado } = addSitio({ ...analisis, finalUrl: scraped.finalUrl })
+  const { id, estado } = addSitio({ ...analisis, finalUrl: scraped.finalUrl, imagen: scraped.imagen })
   return Response.json(
-    { mensaje: `"${analisis.nombre}" agregado.`, id, estado, sitio: { ...analisis, url: scraped.finalUrl } },
+    {
+      mensaje: `"${analisis.nombre}" agregado.`,
+      id,
+      estado,
+      sitio: { ...analisis, url: scraped.finalUrl, imagen: scraped.imagen },
+    },
     { status: 201, headers: CORS }
   )
 }

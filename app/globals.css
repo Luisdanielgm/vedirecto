@@ -81,12 +81,15 @@ a { color: inherit; text-decoration: none; }
 
 /* --- Cards --- */
 .list { display: flex; flex-direction: column; gap: 12px; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; transition: border-color .15s ease; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; transition: border-color .15s ease; }
 .card:hover { border-color: var(--border-strong); }
-.card .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.card-body { display: flex; gap: 16px; align-items: flex-start; }
+.card-main { min-width: 0; flex: 1; }
+.thumb { width: 80px; height: 80px; flex-shrink: 0; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); }
 .card h3 { margin: 0; font-size: 16px; font-weight: 600; }
-.card .cat { font-size: 11px; color: var(--muted); white-space: nowrap; }
-.card .desc { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+.card .cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.cat-chip { font-size: 11px; padding: 2px 9px; border-radius: 999px; color: var(--c, var(--muted)); border: 1px solid var(--c, var(--border)); background: color-mix(in srgb, var(--c, transparent) 12%, transparent); }
+.card .desc { color: var(--muted); font-size: 14px; margin: 9px 0 0; }
 .card .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
 .card .tag { font-size: 12px; color: var(--muted); border: 1px solid var(--border); padding: 2px 9px; border-radius: 6px; }
 .card .meta { display: flex; gap: 12px; align-items: center; margin-top: 14px; font-size: 13px; }
