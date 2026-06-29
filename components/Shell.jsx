@@ -33,9 +33,11 @@ export default function Shell({ sitios: inicial, noticias }) {
         <button className={tab === 'directorio' ? 'tab active' : 'tab'} onClick={() => setTab('directorio')}>
           Directorio <span className="count">{sitios.length}</span>
         </button>
-        <button className={tab === 'noticias' ? 'tab active' : 'tab'} onClick={() => setTab('noticias')}>
-          Noticias <span className="count">{noticias.length}</span>
-        </button>
+        {noticias.length > 0 && (
+          <button className={tab === 'noticias' ? 'tab active' : 'tab'} onClick={() => setTab('noticias')}>
+            Noticias <span className="count">{noticias.length}</span>
+          </button>
+        )}
       </nav>
 
       {tab === 'directorio' ? (

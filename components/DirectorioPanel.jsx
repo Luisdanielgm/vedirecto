@@ -126,44 +126,42 @@ function Card({ s, isAdmin, busy, onBorrar, onReindex }) {
       role="link"
       tabIndex={0}
     >
-      <div className="card-top">
-        {s.imagen && !imgErr && (
-          <img className="thumb" src={s.imagen} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setImgErr(true)} />
+      {s.imagen && !imgErr && (
+        <img className="thumb-full" src={s.imagen} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setImgErr(true)} />
+      )}
+      <div className="card-body">
+        <h3>{s.nombre}</h3>
+        {cats.length > 0 && (
+          <div className="cats">
+            {cats.map((c) => <span className="cat-chip" key={c} style={{ '--c': colorFor(c) }}>{c}</span>)}
+          </div>
         )}
-        <div className="card-head">
-          <h3>{s.nombre}</h3>
-          {cats.length > 0 && (
-            <div className="cats">
-              {cats.map((c) => <span className="cat-chip" key={c} style={{ '--c': colorFor(c) }}>{c}</span>)}
-            </div>
-          )}
-        </div>
+
+        {s.descripcion && <p className={openDesc ? 'desc' : 'desc clamp'}>{s.descripcion}</p>}
+        {longDesc && (
+          <button className="link-mini" onClick={(e) => { stop(e); setOpenDesc((v) => !v) }}>
+            {openDesc ? 'ver menos' : 'ver más'}
+          </button>
+        )}
+
+        {tags.length > 0 && (
+          <div className="tags-row">
+            {shownTags.map((t) => <span className="tag" key={t}>{t}</span>)}
+            {tags.length > 3 && (
+              <button className="tag more" onClick={(e) => { stop(e); setOpenTags((v) => !v) }}>
+                {openTags ? '− menos' : `+${tags.length - 3}`}
+              </button>
+            )}
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="admin-actions" onClick={stop}>
+            <button className="del" onClick={onReindex} disabled={busy}>{busy ? 'Reindexando…' : 'Reindexar'}</button>
+            <button className="del" onClick={onBorrar}>Borrar</button>
+          </div>
+        )}
       </div>
-
-      {s.descripcion && <p className={openDesc ? 'desc' : 'desc clamp'}>{s.descripcion}</p>}
-      {longDesc && (
-        <button className="link-mini" onClick={(e) => { stop(e); setOpenDesc((v) => !v) }}>
-          {openDesc ? 'ver menos' : 'ver más'}
-        </button>
-      )}
-
-      {tags.length > 0 && (
-        <div className="tags-row">
-          {shownTags.map((t) => <span className="tag" key={t}>{t}</span>)}
-          {tags.length > 3 && (
-            <button className="tag more" onClick={(e) => { stop(e); setOpenTags((v) => !v) }}>
-              {openTags ? '− menos' : `+${tags.length - 3}`}
-            </button>
-          )}
-        </div>
-      )}
-
-      {isAdmin && (
-        <div className="admin-actions" onClick={stop}>
-          <button className="del" onClick={onReindex} disabled={busy}>{busy ? 'Reindexando…' : 'Reindexar'}</button>
-          <button className="del" onClick={onBorrar}>Borrar</button>
-        </div>
-      )}
     </article>
   )
 }
