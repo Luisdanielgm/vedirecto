@@ -1,8 +1,9 @@
-import { listSitios, getSitioByUrl, addSitio } from '../../../lib/db'
+import { listSitios, listSitiosLite, addSitio } from '../../../lib/db'
 import { scrapeSite } from '../../../lib/scrape'
 import { analizarSitio } from '../../../lib/analyze'
 import { rateLimit, clientIp } from '../../../lib/ratelimit'
 import { createClient } from '../../../lib/supabase/server'
+import { normalizeUrl, domainOf } from '../../../lib/url-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,8 +50,10 @@ export async function POST(req) {
   const url = (body?.url || '').toString().trim()
   if (!url) return Response.json({ error: 'Falta "url".' }, { status: 400 })
 
-  // Dedup rápido por la URL tal cual la mandaron.
-  if (getSitioByUrl(url)) {
+  // Dedup determinista por URL normalizada (ignora www, http/https, query, barra final).
+  const existentes = listSitiosLite()
+  const norm = normalizeUrl(url)
+  if (existentes.some((s) => normalizeUrl(s.url) === norm)) {
     return Response.json({ error: 'Ese sitio ya está en el directorio.' }, { status: 409 })
   }
 
@@ -63,16 +66,39 @@ export async function POST(req) {
   }
 
   // Dedup otra vez por la URL final (tras redirects).
-  if (getSitioByUrl(scraped.finalUrl)) {
+  const normFinal = normalizeUrl(scraped.finalUrl)
+  if (existentes.some((s) => normalizeUrl(s.url) === normFinal)) {
     return Response.json({ error: 'Ese sitio ya está en el directorio.' }, { status: 409 })
   }
 
-  // 2) Análisis del LLM (extracción + seguridad).
+  // Sitios del MISMO dominio (subdominios/secciones) → para que la IA juzgue duplicados.
+  const dom = domainOf(scraped.finalUrl)
+  const sameDomain = dom
+    ? existentes.filter((s) => domainOf(s.url) === dom).map((s) => ({ nombre: s.nombre, url: s.url }))
+    : []
+
+  // 2) Análisis del LLM (extracción + seguridad + relevancia + duplicado).
   let analisis
   try {
-    analisis = await analizarSitio(scraped)
+    analisis = await analizarSitio({ ...scraped, sameDomain })
   } catch (e) {
     return Response.json({ error: `No se pudo analizar el sitio: ${e.message}` }, { status: 502 })
+  }
+
+  // 2b) La IA detectó que es el mismo recurso que uno ya listado del dominio.
+  if (analisis.duplicado) {
+    return Response.json(
+      { error: `Parece el mismo recurso que ya está${analisis.duplicado_de ? `: "${analisis.duplicado_de}"` : ''}.` },
+      { status: 409 }
+    )
+  }
+
+  // 2c) Filtro de relevancia: si no tiene que ver con la emergencia/ayuda, no entra.
+  if (!analisis.relevante) {
+    return Response.json(
+      { error: `No es relevante para este directorio. ${analisis.motivo_relevancia}`.trim() },
+      { status: 422 }
+    )
   }
 
   // 3) Decisión conservadora: solo "seguro" se publica.
