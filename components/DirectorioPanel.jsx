@@ -12,7 +12,7 @@ function colorFor(cat) {
   return PALETTE[h % PALETTE.length]
 }
 
-export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted, onUpdated }) {
+export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, onDeleted, onUpdated }) {
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState(null)
   const [busyId, setBusyId] = useState(null)
@@ -95,6 +95,7 @@ export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted, on
             key={s.id ?? s.url}
             s={s}
             isAdmin={isAdmin}
+            dev={dev}
             busy={busyId === s.id}
             onBorrar={() => borrar(s)}
             onReindex={() => reindexar(s)}
@@ -106,9 +107,10 @@ export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted, on
   )
 }
 
-function Card({ s, isAdmin, busy, onBorrar, onReindex }) {
+function Card({ s, isAdmin, dev, busy, onBorrar, onReindex }) {
   const [openDesc, setOpenDesc] = useState(false)
   const [openTags, setOpenTags] = useState(false)
+  const [openApi, setOpenApi] = useState(false)
 
   const visit = () => { if (s.url) window.open(s.url, '_blank', 'noopener,noreferrer') }
   const stop = (e) => e.stopPropagation()
@@ -155,6 +157,27 @@ function Card({ s, isAdmin, busy, onBorrar, onReindex }) {
               <button className="tag more" onClick={(e) => { stop(e); setOpenTags((v) => !v) }}>
                 {openTags ? '− menos' : `+${tags.length - 3}`}
               </button>
+            )}
+          </div>
+        )}
+
+        {dev && (s.api?.tiene || (s.endpoints || []).length > 0) && (
+          <div className="api-block" onClick={stop}>
+            <button className="link-mini" onClick={() => setOpenApi((v) => !v)}>
+              {openApi ? 'Ocultar API' : '⚙ Ver API'}
+            </button>
+            {openApi && (
+              <div className="api-panel">
+                {s.api?.base_url && <div><span className="api-k">Base</span> <code>{s.api.base_url}</code></div>}
+                <div><span className="api-k">Auth</span> {s.api?.auth || 'desconocida'}</div>
+                {(s.endpoints || []).length > 0 && (
+                  <ul className="api-eps">{s.endpoints.map((e, i) => <li key={i}><code>{e}</code></li>)}</ul>
+                )}
+                {s.api?.ejemplo && <pre className="api-ej">{s.api.ejemplo}</pre>}
+                {(s.funcionalidades || []).length > 0 && (
+                  <div className="api-funcs"><span className="api-k">Funciones</span> {s.funcionalidades.join(' · ')}</div>
+                )}
+              </div>
             )}
           </div>
         )}

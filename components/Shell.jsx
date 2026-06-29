@@ -8,13 +8,23 @@ export default function Shell({ sitios: inicial, noticias }) {
   const [sitios, setSitios] = useState(inicial)
   const [modal, setModal] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [dev, setDev] = useState(false)
 
   useEffect(() => {
     fetch('/api/me')
       .then((r) => r.json())
       .then((d) => setIsAdmin(!!d.isAdmin))
       .catch(() => {})
+    setDev(localStorage.getItem('vedirecto_dev') === '1')
   }, [])
+
+  const toggleDev = () => {
+    setDev((v) => {
+      const next = !v
+      localStorage.setItem('vedirecto_dev', next ? '1' : '0')
+      return next
+    })
+  }
 
   const onDeleted = (id) => setSitios((p) => p.filter((s) => s.id !== id))
   const onUpdated = (sitio) => setSitios((p) => p.map((s) => (s.id === sitio.id ? sitio : s)))
@@ -24,6 +34,9 @@ export default function Shell({ sitios: inicial, noticias }) {
       <div className="bar">
         <span className="wordmark">Ve<b>Directo</b></span>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button className={dev ? 'dev-toggle on' : 'dev-toggle'} onClick={toggleDev} title="Modo developer: muestra las APIs de los sitios">
+            {dev ? '◉ Developer' : '○ Developer'}
+          </button>
           {isAdmin && <a className="admin-link" href="/admin">Admin</a>}
           <button className="add-btn" onClick={() => setModal(true)}>+ Agregar sitio</button>
         </div>
@@ -41,7 +54,7 @@ export default function Shell({ sitios: inicial, noticias }) {
       </nav>
 
       {tab === 'directorio' ? (
-        <DirectorioPanel sitios={sitios} isAdmin={isAdmin} onDeleted={onDeleted} onUpdated={onUpdated} />
+        <DirectorioPanel sitios={sitios} isAdmin={isAdmin} dev={dev} onDeleted={onDeleted} onUpdated={onUpdated} />
       ) : (
         <section>
           <h1 className="headline">Lo que está pasando</h1>

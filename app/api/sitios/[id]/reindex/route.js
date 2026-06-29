@@ -1,6 +1,6 @@
 import { getAuthedUser, isAdmin } from '../../../../../lib/auth'
 import { getSitioById, updateSitioContent } from '../../../../../lib/db'
-import { scrapeSite } from '../../../../../lib/scrape'
+import { scrapeDeep } from '../../../../../lib/scrape'
 import { analizarSitio } from '../../../../../lib/analyze'
 
 export const dynamic = 'force-dynamic'
@@ -18,7 +18,7 @@ export async function POST(_req, { params }) {
 
   let scraped
   try {
-    scraped = await scrapeSite(existing.url)
+    scraped = await scrapeDeep(existing.url)
   } catch (e) {
     return Response.json({ error: `No se pudo leer el sitio: ${e.message}` }, { status: 400 })
   }
