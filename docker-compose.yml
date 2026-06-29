@@ -1,7 +1,11 @@
 # Local: probar la imagen como en producción (puerto publicado al host).
 services:
   vedirecto:
-    build: .
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
     container_name: vedirecto
     restart: unless-stopped
     ports:
@@ -11,6 +15,8 @@ services:
       - CAUCE_API_KEY=${CAUCE_API_KEY:?defini CAUCE_API_KEY}
       - CAUCE_BASE_URL=${CAUCE_BASE_URL:-https://api.cauce.me/v1}
       - CAUCE_MODEL=${CAUCE_MODEL:-deepseek-v4-flash}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
     volumes:
       - vedirecto-data:/app/data
 

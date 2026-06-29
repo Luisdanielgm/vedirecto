@@ -27,8 +27,15 @@ export async function POST(req) {
 
   // Candado: solo usuarios logueados con Google pueden gastar el LLM.
   // La sesión viaja por cookie; el servidor la valida (no se confía en el cliente).
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // Falla cerrado: cualquier error de auth = 401 (no 500).
+  let user = null
+  try {
+    const supabase = await createClient()
+    const { data } = await supabase.auth.getUser()
+    user = data?.user ?? null
+  } catch (e) {
+    console.error('auth check falló:', e?.message || e)
+  }
   if (!user) {
     return Response.json({ error: 'Iniciá sesión con Google para agregar un sitio.' }, { status: 401 })
   }
