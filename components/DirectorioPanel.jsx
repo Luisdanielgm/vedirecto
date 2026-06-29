@@ -34,11 +34,9 @@ export default function DirectorioPanel({ sitios }) {
 
   return (
     <section>
-      <p className="eyebrow">Directorio</p>
       <h1 className="headline">Sitios que ayudan</h1>
       <p className="lead">
-        {sitios.length} {sitios.length === 1 ? 'iniciativa' : 'iniciativas'} organizadas por categoría.
-        Busca por nombre o filtra para encontrar lo que necesitas.
+        {sitios.length} {sitios.length === 1 ? 'sitio' : 'sitios'} organizados por categoría.
       </p>
 
       <div className="searchbar">

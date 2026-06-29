@@ -27,9 +27,7 @@ export default function Shell({ sitios: inicial, noticias }) {
         <DirectorioPanel sitios={sitios} />
       ) : (
         <section>
-          <p className="eyebrow">Noticias</p>
           <h1 className="headline">Lo que está pasando</h1>
-          <p className="lead">Información reciente sobre la emergencia y la respuesta ciudadana.</p>
           <div className="list">
             {noticias.map((n) => (
               <article className="card" key={n.id}>

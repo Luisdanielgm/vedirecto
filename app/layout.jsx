@@ -1,12 +1,4 @@
 import './globals.css'
-import { Playfair_Display } from 'next/font/google'
-
-const serif = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['600', '700', '800'],
-  variable: '--font-serif',
-  display: 'swap',
-})
 
 export const metadata = {
   title: 'VeDirecto · Venezuela',
@@ -15,7 +7,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es" className={serif.variable}>
+    <html lang="es">
       <body>{children}</body>
     </html>
   )
