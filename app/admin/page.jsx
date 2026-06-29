@@ -8,6 +8,7 @@ export default function AdminPage() {
   const [urls, setUrls] = useState('')
   const [importing, setImporting] = useState(false)
   const [report, setReport] = useState(null)
+  const [busy, setBusy] = useState(null)
 
   const loadSitios = () =>
     fetch('/api/admin/sitios').then((r) => (r.ok ? r.json() : [])).then(setSitios).catch(() => {})
@@ -51,9 +52,17 @@ export default function AdminPage() {
     if (r.ok) loadSitios()
   }
   const reindex = async (s) => {
-    const r = await fetch(`/api/sitios/${s.id}/reindex`, { method: 'POST' })
-    if (r.ok) loadSitios()
-    else alert('No se pudo reindexar.')
+    setBusy(s.id)
+    try {
+      const r = await fetch(`/api/sitios/${s.id}/reindex`, { method: 'POST' })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok && d.sitio) {
+        alert(`Reindexado: riesgo "${d.sitio.riesgo}".${d.sitio.riesgo === 'seguro' ? ' Ya podés Publicarlo.' : ''}`)
+        loadSitios()
+      } else alert(d.error || 'No se pudo reindexar.')
+    } finally {
+      setBusy(null)
+    }
   }
   const cambiarEstado = async (s, estado) => {
     const r = await fetch(`/api/sitios/${s.id}`, {
@@ -118,13 +127,18 @@ export default function AdminPage() {
             <article className="card" key={s.id}>
               <div className="row" style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                 <h3>{s.nombre}</h3>
-                <span className={`estado ${s.estado}`}>{s.estado}</span>
+                <span style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  {s.riesgo && s.riesgo !== 'seguro' && <span className="estado">{s.riesgo}</span>}
+                  <span className={`estado ${s.estado}`}>{s.estado}</span>
+                </span>
               </div>
               <p className="desc">{s.url}</p>
               <div className="meta">
                 {s.estado !== 'publicado' && <button className="del" onClick={() => cambiarEstado(s, 'publicado')}>Publicar</button>}
                 {s.estado === 'publicado' && <button className="del" onClick={() => cambiarEstado(s, 'pendiente')}>Despublicar</button>}
-                <button className="del" onClick={() => reindex(s)}>Reindexar</button>
+                <button className="del" onClick={() => reindex(s)} disabled={busy === s.id}>
+                  {busy === s.id ? 'Reindexando…' : 'Reindexar'}
+                </button>
                 <button className="del" onClick={() => borrar(s)}>Borrar</button>
               </div>
             </article>
