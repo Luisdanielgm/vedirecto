@@ -109,7 +109,6 @@ export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted, on
 function Card({ s, isAdmin, busy, onBorrar, onReindex }) {
   const [openDesc, setOpenDesc] = useState(false)
   const [openTags, setOpenTags] = useState(false)
-  const [imgErr, setImgErr] = useState(false)
 
   const visit = () => { if (s.url) window.open(s.url, '_blank', 'noopener,noreferrer') }
   const stop = (e) => e.stopPropagation()
@@ -126,9 +125,6 @@ function Card({ s, isAdmin, busy, onBorrar, onReindex }) {
       role="link"
       tabIndex={0}
     >
-      {s.imagen && !imgErr && (
-        <img className="thumb-full" src={s.imagen} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setImgErr(true)} />
-      )}
       <div className="card-body">
         <h3>{s.nombre}</h3>
         {cats.length > 0 && (
