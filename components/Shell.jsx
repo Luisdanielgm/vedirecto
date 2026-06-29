@@ -17,6 +17,7 @@ export default function Shell({ sitios: inicial, noticias }) {
   }, [])
 
   const onDeleted = (id) => setSitios((p) => p.filter((s) => s.id !== id))
+  const onUpdated = (sitio) => setSitios((p) => p.map((s) => (s.id === sitio.id ? sitio : s)))
 
   return (
     <div className="wrap">
@@ -35,7 +36,7 @@ export default function Shell({ sitios: inicial, noticias }) {
       </nav>
 
       {tab === 'directorio' ? (
-        <DirectorioPanel sitios={sitios} isAdmin={isAdmin} onDeleted={onDeleted} />
+        <DirectorioPanel sitios={sitios} isAdmin={isAdmin} onDeleted={onDeleted} onUpdated={onUpdated} />
       ) : (
         <section>
           <h1 className="headline">Lo que está pasando</h1>

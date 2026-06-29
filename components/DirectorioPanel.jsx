@@ -12,15 +12,28 @@ function colorFor(cat) {
   return PALETTE[h % PALETTE.length]
 }
 
-export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted }) {
+export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted, onUpdated }) {
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState(null) // null = Todos
+  const [busyId, setBusyId] = useState(null)
 
   const borrar = async (s) => {
     if (!confirm(`¿Borrar "${s.nombre}" del directorio?`)) return
     const r = await fetch(`/api/sitios/${s.id}`, { method: 'DELETE' })
     if (r.ok) onDeleted?.(s.id)
     else alert('No se pudo borrar.')
+  }
+
+  const reindexar = async (s) => {
+    setBusyId(s.id)
+    try {
+      const r = await fetch(`/api/sitios/${s.id}/reindex`, { method: 'POST' })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok && d.sitio) onUpdated?.(d.sitio)
+      else alert(d.error || 'No se pudo reindexar.')
+    } finally {
+      setBusyId(null)
+    }
   }
 
   const cats = useMemo(() => {
@@ -105,7 +118,12 @@ export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted }) 
                 <div className="meta">
                   {s.url && <a className="visit" href={s.url} target="_blank" rel="noreferrer">Visitar</a>}
                   {isAdmin && (
-                    <button className="del" onClick={() => borrar(s)} title="Borrar">Borrar</button>
+                    <>
+                      <button className="del" onClick={() => reindexar(s)} disabled={busyId === s.id}>
+                        {busyId === s.id ? 'Reindexando…' : 'Reindexar'}
+                      </button>
+                      <button className="del" onClick={() => borrar(s)} title="Borrar">Borrar</button>
+                    </>
                   )}
                 </div>
               </div>
