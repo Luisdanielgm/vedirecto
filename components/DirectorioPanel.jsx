@@ -98,7 +98,16 @@ export default function DirectorioPanel({ sitios, isAdmin = false, onDeleted, on
           <article className="card" key={s.id ?? s.url}>
             <div className="card-body">
               {s.imagen && (
-                <img className="thumb" src={s.imagen} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                <img
+                  className="thumb"
+                  src={s.imagen}
+                  alt=""
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
               )}
               <div className="card-main">
                 <h3>{s.nombre}</h3>
