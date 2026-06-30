@@ -2,6 +2,7 @@ import { getAuthedUser, isAdmin } from '../../../../../lib/auth'
 import { getSitioById, updateSitioContent } from '../../../../../lib/db'
 import { scrapeDeep } from '../../../../../lib/scrape'
 import { analizarSitio } from '../../../../../lib/analyze'
+import { analizarConAgente } from '../../../../../lib/agent'
 import { putPreview, takePreview } from '../../../../../lib/preview-cache'
 
 export const dynamic = 'force-dynamic'
@@ -49,6 +50,18 @@ export async function POST(req, { params }) {
     analisis = await analizarSitio(scraped)
   } catch (e) {
     return Response.json({ error: `No se pudo analizar: ${e.message}` }, { status: 502 })
+  }
+
+  // Si la extracción simple quedó pobre, escalamos al agente (navega docs/api/github).
+  const pobre =
+    !analisis.descripcion ||
+    (analisis.categorias?.length === 1 && analisis.categorias[0] === 'Otros') ||
+    (analisis.riesgo === 'dudoso' && /no se pudo analizar/i.test(analisis.motivo_riesgo || ''))
+  if (pobre) {
+    try {
+      const ag = await analizarConAgente(existing.url, {})
+      if (ag && ag.descripcion) analisis = ag
+    } catch {}
   }
 
   // Preview: cacheamos y devolvemos sin guardar.

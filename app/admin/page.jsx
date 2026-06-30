@@ -16,6 +16,10 @@ export default function AdminPage() {
   const [addingNoticia, setAddingNoticia] = useState(false)
   const [catDe, setCatDe] = useState('')
   const [catA, setCatA] = useState('')
+  const [fuentes, setFuentes] = useState([])
+  const [fuenteUrl, setFuenteUrl] = useState('')
+  const [fuenteNombre, setFuenteNombre] = useState('')
+  const [refrescando, setRefrescando] = useState(false)
 
   const loadSitios = () =>
     fetch('/api/admin/sitios').then((r) => (r.ok ? r.json() : [])).then(setSitios).catch(() => {})
@@ -25,6 +29,8 @@ export default function AdminPage() {
     fetch('/api/admin/noticias').then((r) => (r.ok ? r.json() : [])).then(setNoticias).catch(() => {})
   const loadAudit = () =>
     fetch('/api/admin/audit').then((r) => (r.ok ? r.json() : [])).then(setAudit).catch(() => {})
+  const loadFuentes = () =>
+    fetch('/api/admin/fuentes').then((r) => (r.ok ? r.json() : [])).then(setFuentes).catch(() => {})
 
   useEffect(() => {
     fetch('/api/me')
@@ -37,10 +43,48 @@ export default function AdminPage() {
           loadStats()
           loadNoticias()
           loadAudit()
+          loadFuentes()
         }
       })
       .catch(() => setReady(true))
   }, [])
+
+  const agregarFuente = async () => {
+    const u = fuenteUrl.trim()
+    if (!u) return
+    const r = await fetch('/api/admin/fuentes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: u, nombre: fuenteNombre.trim() }),
+    })
+    if (r.ok) {
+      setFuenteUrl('')
+      setFuenteNombre('')
+      loadFuentes()
+    } else {
+      const d = await r.json().catch(() => ({}))
+      alert(d.error || 'No se pudo agregar la fuente.')
+    }
+  }
+  const borrarFuente = async (f) => {
+    if (!confirm(`¿Borrar la fuente "${f.nombre || f.url}"?`)) return
+    const r = await fetch(`/api/admin/fuentes/${f.id}`, { method: 'DELETE' })
+    if (r.ok) loadFuentes()
+  }
+  const refrescarNoticias = async () => {
+    setRefrescando(true)
+    try {
+      const r = await fetch('/api/cron/noticias', { method: 'POST' })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok) {
+        alert(`Listo: ${d.total ?? 0} noticias nuevas.`)
+        loadNoticias()
+        loadFuentes()
+      } else alert(d.error || 'No se pudo refrescar.')
+    } finally {
+      setRefrescando(false)
+    }
+  }
 
   const agregarNoticia = async () => {
     const u = noticiaUrl.trim()
@@ -321,6 +365,41 @@ export default function AdminPage() {
             </article>
           ))}
           {noticias.length === 0 && <p className="empty">No hay noticias todavía.</p>}
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <h2>Fuentes de noticias ({fuentes.length})</h2>
+        <p className="lead">Medios cuya portada se revisa para traer notas del terremoto. <b>Refrescar</b> recorre todas y agrega lo nuevo (un cron puede hacerlo solo).</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input
+            value={fuenteUrl}
+            onChange={(e) => setFuenteUrl(e.target.value)}
+            placeholder="https://medio.com (portada o sección terremoto)"
+            style={{ flex: '2 1 240px', minWidth: 0, padding: '11px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', fontSize: '14px' }}
+          />
+          <input
+            value={fuenteNombre}
+            onChange={(e) => setFuenteNombre(e.target.value)}
+            placeholder="nombre (opcional)"
+            style={{ flex: '1 1 140px', minWidth: 0, padding: '11px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', fontSize: '14px' }}
+          />
+          <button className="add-btn" onClick={agregarFuente}>Agregar fuente</button>
+          <button className="add-btn" onClick={refrescarNoticias} disabled={refrescando} style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--border-strong)' }}>
+            {refrescando ? 'Refrescando…' : '↻ Refrescar noticias'}
+          </button>
+        </div>
+        <div className="list" style={{ marginTop: 14 }}>
+          {fuentes.map((f) => (
+            <article className="card" key={f.id}>
+              <div className="row" style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                <h3>{f.nombre || f.url}</h3>
+                <button className="del" onClick={() => borrarFuente(f)}>Borrar</button>
+              </div>
+              <p className="desc">{f.url}{f.ultimo ? ` · último: ${f.ultimo.slice(0, 16).replace('T', ' ')}` : ''}</p>
+            </article>
+          ))}
+          {fuentes.length === 0 && <p className="empty">No hay fuentes. Agregá una (ej: la portada de un medio).</p>}
         </div>
       </section>
     </div>
