@@ -1,6 +1,22 @@
+import { createHash } from 'node:crypto'
 import { registrarVisita } from '../../../lib/db'
+import { clientIp } from '../../../lib/ratelimit'
 
 export const dynamic = 'force-dynamic'
+
+// Identificador de visitante para contar ÚNICOS sin guardar la IP: hash NO
+// reversible sha256(salt | día | ip), truncado. Rota cada día (no se puede
+// correlacionar a la misma persona entre días). Esto NO es un registro de IPs.
+function visitanteHash(req) {
+  try {
+    const ip = clientIp(req)
+    const dia = new Date().toISOString().slice(0, 10)
+    const salt = process.env.VISIT_SALT || 'vedirecto'
+    return createHash('sha256').update(`${salt}|${dia}|${ip}`).digest('hex').slice(0, 16)
+  } catch {
+    return null
+  }
+}
 
 // Registra una visita de página o un clic a un sitio. Público, sin datos personales.
 export async function POST(req) {
@@ -14,7 +30,7 @@ export async function POST(req) {
   if (!tipo) return new Response(null, { status: 400 })
   const sitioId = Number.isInteger(b?.sitioId) ? b.sitioId : null
   try {
-    registrarVisita(tipo, sitioId)
+    registrarVisita(tipo, sitioId, visitanteHash(req))
   } catch {}
   return new Response(null, { status: 204 })
 }

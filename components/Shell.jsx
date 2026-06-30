@@ -200,6 +200,7 @@ function AddModal({ onClose, onAdded }) {
         ) : !user ? (
           <>
             <p className="hint">Iniciá sesión con Google para agregar un sitio. El análisis lo hace una IA, por eso pedimos login.</p>
+            <p className="hint privacy-note">Al iniciar sesión registramos tu email y tu IP, solo para moderación y seguridad. De quienes solo navegan no guardamos ningún dato personal.</p>
             <button className="google-btn" onClick={login}>Iniciar sesión con Google</button>
           </>
         ) : preview ? (

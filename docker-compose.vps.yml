@@ -18,6 +18,8 @@ services:
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
       - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - VISIT_SALT=${VISIT_SALT:-vedirecto}
+      - CRON_SECRET=${CRON_SECRET:-}
     volumes:
       - vedirecto-data:/app/data
     networks:

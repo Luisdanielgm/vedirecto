@@ -296,12 +296,13 @@ export default function AdminPage() {
           <>
             <div className="stats-row">
               <div className="stat"><span className="stat-n">{stats.total}</span><span className="stat-l">visitas a la página</span></div>
+              <div className="stat"><span className="stat-n">{stats.unicosHoy ?? 0}</span><span className="stat-l">visitantes únicos hoy</span></div>
               <div className="stat"><span className="stat-n">{stats.totalClicks}</span><span className="stat-l">clics a sitios</span></div>
             </div>
             {stats.porDia?.length > 0 && (
               <div className="stats-dias">
                 {stats.porDia.map((d) => (
-                  <div className="dia" key={d.dia}><span>{d.dia.slice(5)}</span><b>{d.n}</b></div>
+                  <div className="dia" key={d.dia} title={`${d.u ?? 0} visitantes únicos`}><span>{d.dia.slice(5)}</span><b>{d.n}</b>{d.u != null && <small>{d.u} únicos</small>}</div>
                 ))}
               </div>
             )}
