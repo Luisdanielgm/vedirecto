@@ -10,11 +10,16 @@ export default function AdminPage() {
   const [report, setReport] = useState(null)
   const [busy, setBusy] = useState(null)
   const [stats, setStats] = useState(null)
+  const [noticias, setNoticias] = useState([])
+  const [noticiaUrl, setNoticiaUrl] = useState('')
+  const [addingNoticia, setAddingNoticia] = useState(false)
 
   const loadSitios = () =>
     fetch('/api/admin/sitios').then((r) => (r.ok ? r.json() : [])).then(setSitios).catch(() => {})
   const loadStats = () =>
     fetch('/api/admin/stats').then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => {})
+  const loadNoticias = () =>
+    fetch('/api/admin/noticias').then((r) => (r.ok ? r.json() : [])).then(setNoticias).catch(() => {})
 
   useEffect(() => {
     fetch('/api/me')
@@ -25,10 +30,36 @@ export default function AdminPage() {
         if (d.isAdmin) {
           loadSitios()
           loadStats()
+          loadNoticias()
         }
       })
       .catch(() => setReady(true))
   }, [])
+
+  const agregarNoticia = async () => {
+    const u = noticiaUrl.trim()
+    if (!u) return
+    setAddingNoticia(true)
+    try {
+      const r = await fetch('/api/admin/noticias', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: u }),
+      })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok) {
+        setNoticiaUrl('')
+        loadNoticias()
+      } else alert(d.error || 'No se pudo agregar la noticia.')
+    } finally {
+      setAddingNoticia(false)
+    }
+  }
+  const borrarNoticia = async (n) => {
+    if (!confirm(`¿Borrar "${n.titulo}"?`)) return
+    const r = await fetch(`/api/admin/noticias/${n.id}`, { method: 'DELETE' })
+    if (r.ok) loadNoticias()
+  }
 
   const importar = async () => {
     const list = urls.split('\n').map((s) => s.trim()).filter(Boolean)
@@ -179,6 +210,38 @@ export default function AdminPage() {
             </article>
           ))}
           {sitios.length === 0 && <p className="empty">No hay sitios todavía.</p>}
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <h2>Noticias ({noticias.length})</h2>
+        <p className="lead">Pegá el link de una nota; la IA extrae título, resumen y fecha.</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            value={noticiaUrl}
+            onChange={(e) => setNoticiaUrl(e.target.value)}
+            placeholder="https://medio.com/nota…"
+            style={{ flex: 1, minWidth: 0, padding: '11px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', fontSize: '14px' }}
+          />
+          <button className="add-btn" onClick={agregarNoticia} disabled={addingNoticia}>
+            {addingNoticia ? 'Agregando…' : 'Agregar noticia'}
+          </button>
+        </div>
+        <div className="list" style={{ marginTop: 14 }}>
+          {noticias.map((n) => (
+            <article className="card" key={n.id}>
+              <div className="row" style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                <h3>{n.titulo}</h3>
+                {n.fecha && <span className="fecha">{n.fecha}</span>}
+              </div>
+              {n.resumen && <p className="desc">{n.resumen}</p>}
+              <div className="meta">
+                {n.url && <a className="visit" href={n.url} target="_blank" rel="noreferrer">Ver</a>}
+                <button className="del" onClick={() => borrarNoticia(n)}>Borrar</button>
+              </div>
+            </article>
+          ))}
+          {noticias.length === 0 && <p className="empty">No hay noticias todavía.</p>}
         </div>
       </section>
     </div>
