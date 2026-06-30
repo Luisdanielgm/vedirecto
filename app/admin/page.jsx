@@ -1,5 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
+import PreviewCard from '../../components/PreviewCard'
+
+// Resumen "agregado: 3 · saltado: 2 · duplicado: 1" para el cierre de la cola.
+function resumenEstados(res) {
+  const c = {}
+  for (const r of res) c[r.status] = (c[r.status] || 0) + 1
+  return Object.entries(c).map(([k, v]) => `${k}: ${v}`).join(' · ') || 'sin resultados'
+}
 
 export default function AdminPage() {
   const [ready, setReady] = useState(false)
@@ -20,6 +28,13 @@ export default function AdminPage() {
   const [fuenteUrl, setFuenteUrl] = useState('')
   const [fuenteNombre, setFuenteNombre] = useState('')
   const [refrescando, setRefrescando] = useState(false)
+  // Cola de revisión 1-por-1 del batch (analiza lazy cada URL al llegar a ella).
+  const [colaUrls, setColaUrls] = useState(null) // array activo, o null = inactiva
+  const [colaIdx, setColaIdx] = useState(0)
+  const [colaCur, setColaCur] = useState(null) // preview de la URL actual
+  const [colaLoading, setColaLoading] = useState(false)
+  const [colaSaving, setColaSaving] = useState(false)
+  const [colaRes, setColaRes] = useState([]) // [{url, status}]
 
   const loadSitios = () =>
     fetch('/api/admin/sitios').then((r) => (r.ok ? r.json() : [])).then(setSitios).catch(() => {})
@@ -131,6 +146,72 @@ export default function AdminPage() {
     } finally {
       setImporting(false)
     }
+  }
+
+  // --- Cola de revisión 1-por-1 ---
+  const iniciarCola = () => {
+    const seen = new Set()
+    const list = []
+    for (const raw of urls.split('\n').map((s) => s.trim()).filter(Boolean)) {
+      const k = raw.toLowerCase().replace(/\/+$/, '')
+      if (seen.has(k)) continue
+      seen.add(k)
+      list.push(raw)
+    }
+    if (!list.length) return
+    setReport(null)
+    setColaRes([])
+    setColaCur(null)
+    setColaIdx(0)
+    setColaUrls(list)
+  }
+
+  // Analiza la URL actual recién cuando se llega a ella (no las 25 de golpe).
+  useEffect(() => {
+    if (!colaUrls || colaIdx >= colaUrls.length || colaCur || colaLoading) return
+    let cancel = false
+    setColaLoading(true)
+    fetch('/api/sitios/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: colaUrls[colaIdx] }),
+    })
+      .then((r) => r.json().then((d) => ({ ok: r.ok, http: r.status, d })))
+      .then(({ ok, http, d }) => {
+        if (cancel) return
+        setColaCur(ok ? d : { status: 'error', error: d.error || `Error ${http}` })
+      })
+      .catch(() => { if (!cancel) setColaCur({ status: 'error', error: 'Error de red.' }) })
+      .finally(() => { if (!cancel) setColaLoading(false) })
+    return () => { cancel = true }
+  }, [colaUrls, colaIdx, colaCur, colaLoading])
+
+  const avanzarCola = (estado) => {
+    setColaRes((prev) => [...prev, { url: colaUrls[colaIdx], status: estado }])
+    setColaCur(null)
+    setColaIdx((i) => i + 1)
+  }
+  const agregarCola = async () => {
+    if (!colaCur?.token) return
+    setColaSaving(true)
+    try {
+      const r = await fetch('/api/sitios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: colaCur.token }),
+      })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok) loadSitios()
+      avanzarCola(r.ok ? 'agregado' : (d.riesgo || 'error'))
+    } finally {
+      setColaSaving(false)
+    }
+  }
+  const cerrarCola = () => {
+    setColaUrls(null)
+    setColaIdx(0)
+    setColaCur(null)
+    setColaRes([])
   }
 
   const borrar = async (s) => {
@@ -257,30 +338,72 @@ export default function AdminPage() {
 
       <section className="admin-section">
         <h2>Importar por lotes</h2>
-        <p className="lead">Pegá URLs (una por línea, hasta 25). Cada una pasa por el mismo análisis: seguridad, relevancia y dedup.</p>
-        <textarea
-          className="admin-ta"
-          rows={6}
-          value={urls}
-          onChange={(e) => setUrls(e.target.value)}
-          placeholder={'https://sitio1.org\nhttps://sitio2.app'}
-        />
-        <button className="add-btn" onClick={importar} disabled={importing}>
-          {importing ? 'Importando…' : 'Importar'}
-        </button>
-        {report && (
-          <div className="report">
-            <p className="lead">{Object.entries(report.resumen).map(([k, v]) => `${k}: ${v}`).join(' · ')}</p>
-            <ul>
-              {report.results.map((r, i) => (
-                <li key={i}>
-                  <b>{r.status}</b> — {r.url}
-                  {r.nota ? ` · ${r.nota}` : ''}
-                  {r.error ? ` · ${r.error}` : ''}
-                </li>
-              ))}
-            </ul>
-          </div>
+        {colaUrls ? (
+          colaIdx >= colaUrls.length ? (
+            <div className="report">
+              <p className="lead">Cola terminada. {resumenEstados(colaRes)}</p>
+              <ul>
+                {colaRes.map((r, i) => <li key={i}><b>{r.status}</b> — {r.url}</li>)}
+              </ul>
+              <button className="add-btn" onClick={cerrarCola}>Cerrar</button>
+            </div>
+          ) : (
+            <div>
+              <p className="lead">
+                Revisando <b>{colaIdx + 1} / {colaUrls.length}</b> · <span className="preview-url">{colaUrls[colaIdx]}</span>
+              </p>
+              {colaLoading || !colaCur ? (
+                <p className="lead">Analizando…</p>
+              ) : (
+                <PreviewCard data={colaCur}>
+                  <div className="preview-actions">
+                    <button className="del" onClick={() => avanzarCola('saltado')} disabled={colaSaving}>Saltar</button>
+                    {colaCur.status === 'ok' ? (
+                      <button className="add-btn" onClick={agregarCola} disabled={colaSaving}>{colaSaving ? 'Agregando…' : 'Agregar'}</button>
+                    ) : (
+                      <span className="hint">No se agrega ({colaCur.status}).</span>
+                    )}
+                  </div>
+                </PreviewCard>
+              )}
+              <div style={{ marginTop: 12 }}>
+                <button className="del" onClick={cerrarCola}>Terminar cola</button>
+              </div>
+            </div>
+          )
+        ) : (
+          <>
+            <p className="lead">Pegá URLs (una por línea, hasta 25). Cada una pasa por el mismo análisis: seguridad, relevancia y dedup.</p>
+            <textarea
+              className="admin-ta"
+              rows={6}
+              value={urls}
+              onChange={(e) => setUrls(e.target.value)}
+              placeholder={'https://sitio1.org\nhttps://sitio2.app'}
+            />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="add-btn" onClick={importar} disabled={importing}>
+                {importing ? 'Importando…' : 'Importar directo'}
+              </button>
+              <button className="add-btn" onClick={iniciarCola} style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--border-strong)' }}>
+                Revisar 1 por 1
+              </button>
+            </div>
+            {report && (
+              <div className="report">
+                <p className="lead">{Object.entries(report.resumen).map(([k, v]) => `${k}: ${v}`).join(' · ')}</p>
+                <ul>
+                  {report.results.map((r, i) => (
+                    <li key={i}>
+                      <b>{r.status}</b> — {r.url}
+                      {r.nota ? ` · ${r.nota}` : ''}
+                      {r.error ? ` · ${r.error}` : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
       </section>
 
