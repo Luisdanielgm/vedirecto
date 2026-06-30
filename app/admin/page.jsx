@@ -10,6 +10,7 @@ export default function AdminPage() {
   const [report, setReport] = useState(null)
   const [busy, setBusy] = useState(null)
   const [stats, setStats] = useState(null)
+  const [audit, setAudit] = useState([])
   const [noticias, setNoticias] = useState([])
   const [noticiaUrl, setNoticiaUrl] = useState('')
   const [addingNoticia, setAddingNoticia] = useState(false)
@@ -22,6 +23,8 @@ export default function AdminPage() {
     fetch('/api/admin/stats').then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => {})
   const loadNoticias = () =>
     fetch('/api/admin/noticias').then((r) => (r.ok ? r.json() : [])).then(setNoticias).catch(() => {})
+  const loadAudit = () =>
+    fetch('/api/admin/audit').then((r) => (r.ok ? r.json() : [])).then(setAudit).catch(() => {})
 
   useEffect(() => {
     fetch('/api/me')
@@ -33,6 +36,7 @@ export default function AdminPage() {
           loadSitios()
           loadStats()
           loadNoticias()
+          loadAudit()
         }
       })
       .catch(() => setReady(true))
@@ -185,6 +189,25 @@ export default function AdminPage() {
               </div>
             )}
           </>
+        )}
+      </section>
+
+      <section className="admin-section">
+        <h2>Accesos (auditoría)</h2>
+        <p className="lead">Login y altas de usuarios registrados (email + IP). Solo para moderación y seguridad.</p>
+        {audit.length === 0 ? (
+          <p className="empty">Sin registros todavía.</p>
+        ) : (
+          <div className="report">
+            <ul>
+              {audit.map((a) => (
+                <li key={a.id}>
+                  <b>{a.accion}</b> — {a.email || 'anónimo'} · {a.ip || '—'}
+                  {a.detalle ? ` · ${a.detalle}` : ''} · {a.creado}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </section>
 
