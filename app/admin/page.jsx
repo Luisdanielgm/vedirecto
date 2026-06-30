@@ -13,6 +13,8 @@ export default function AdminPage() {
   const [noticias, setNoticias] = useState([])
   const [noticiaUrl, setNoticiaUrl] = useState('')
   const [addingNoticia, setAddingNoticia] = useState(false)
+  const [catDe, setCatDe] = useState('')
+  const [catA, setCatA] = useState('')
 
   const loadSitios = () =>
     fetch('/api/admin/sitios').then((r) => (r.ok ? r.json() : [])).then(setSitios).catch(() => {})
@@ -109,6 +111,21 @@ export default function AdminPage() {
     })
     if (r.ok) loadSitios()
   }
+  const fusionar = async () => {
+    if (!catDe.trim() || !catA.trim()) return
+    const r = await fetch('/api/admin/merge-categoria', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ de: catDe.trim(), a: catA.trim() }),
+    })
+    const d = await r.json().catch(() => ({}))
+    if (r.ok) {
+      alert(`Fusionados ${d.merged} sitios: "${catDe}" → "${catA}"`)
+      setCatDe('')
+      setCatA('')
+      loadSitios()
+    } else alert(d.error || 'No se pudo fusionar.')
+  }
 
   if (!ready) return <div className="wrap"><p className="lead">Cargando…</p></div>
   if (!admin)
@@ -118,6 +135,8 @@ export default function AdminPage() {
         <p className="lead">No autorizado. Iniciá sesión con la cuenta admin desde la <a className="visit" href="/">home</a>.</p>
       </div>
     )
+
+  const cats = [...new Set(sitios.flatMap((s) => s.categorias || []))].sort((a, b) => a.localeCompare(b, 'es'))
 
   return (
     <div className="wrap">
@@ -184,6 +203,31 @@ export default function AdminPage() {
             </ul>
           </div>
         )}
+      </section>
+
+      <section className="admin-section">
+        <h2>Fusionar categorías</h2>
+        <p className="lead">Uní una duplicada en otra (ej: "Personas Desaparecidas" → "Desaparecidos"). Instantáneo, sin gastar Cauce.</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            list="cats-list"
+            value={catDe}
+            onChange={(e) => setCatDe(e.target.value)}
+            placeholder="de (categoría a unir)"
+            style={{ flex: '1 1 200px', minWidth: 0, padding: '11px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', fontSize: '14px' }}
+          />
+          <span style={{ color: 'var(--muted)' }}>→</span>
+          <input
+            list="cats-list"
+            value={catA}
+            onChange={(e) => setCatA(e.target.value)}
+            placeholder="a (categoría destino)"
+            style={{ flex: '1 1 200px', minWidth: 0, padding: '11px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text)', fontSize: '14px' }}
+          />
+          <datalist id="cats-list">{cats.map((c) => <option key={c} value={c} />)}</datalist>
+          <button className="add-btn" onClick={fusionar}>Fusionar</button>
+        </div>
+        {cats.length > 0 && <p className="lead" style={{ marginTop: 10, fontSize: 13 }}>Actuales: {cats.join(' · ')}</p>}
       </section>
 
       <section className="admin-section">

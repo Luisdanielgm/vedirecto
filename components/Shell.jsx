@@ -98,6 +98,7 @@ function AddModal({ onClose, onAdded }) {
   const [user, setUser] = useState(null)
   const [authReady, setAuthReady] = useState(false)
   const [configured, setConfigured] = useState(true)
+  const [preview, setPreview] = useState(null) // { status, token, preview, nota }
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {

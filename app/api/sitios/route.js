@@ -1,7 +1,8 @@
-import { listSitios } from '../../../lib/db'
+import { listSitios, addSitio } from '../../../lib/db'
 import { rateLimit, clientIp } from '../../../lib/ratelimit'
 import { createClient } from '../../../lib/supabase/server'
 import { ingestUrl } from '../../../lib/ingest'
+import { takePreview } from '../../../lib/preview-cache'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,6 +42,27 @@ export async function POST(req) {
   } catch {
     return Response.json({ error: 'JSON inválido.' }, { status: 400 })
   }
+  // Confirmar una previsualización por token (no re-analiza, usa lo cacheado).
+  const token = (body?.token || '').toString().trim()
+  if (token) {
+    const cached = takePreview(token)
+    if (!cached || cached.kind !== 'add') {
+      return Response.json({ error: 'La previsualización expiró. Volvé a previsualizar.' }, { status: 410 })
+    }
+    const a = cached.analisis
+    const { id, estado } = addSitio({ ...a, finalUrl: cached.finalUrl, imagen: cached.imagen })
+    if (a.riesgo !== 'seguro') {
+      return Response.json(
+        { error: `El sitio no se publicó (riesgo: ${a.riesgo}). ${a.motivo_riesgo || ''}`.trim(), riesgo: a.riesgo },
+        { status: 422 }
+      )
+    }
+    return Response.json(
+      { mensaje: `"${a.nombre}" agregado.`, id, estado, sitio: { ...a, url: cached.finalUrl, imagen: cached.imagen, id, estado } },
+      { status: 201, headers: CORS }
+    )
+  }
+
   const url = (body?.url || '').toString().trim()
   if (!url) return Response.json({ error: 'Falta "url".' }, { status: 400 })
 

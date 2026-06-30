@@ -2,19 +2,40 @@ import { getAuthedUser, isAdmin } from '../../../../../lib/auth'
 import { getSitioById, updateSitioContent } from '../../../../../lib/db'
 import { scrapeDeep } from '../../../../../lib/scrape'
 import { analizarSitio } from '../../../../../lib/analyze'
+import { putPreview, takePreview } from '../../../../../lib/preview-cache'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
-// Re-corre el pipeline (scrape + LLM) sobre un sitio existente y actualiza su
-// ficha (imagen, categorías, descripción...). Solo admin (gasta un llamado a Cauce).
-export async function POST(_req, { params }) {
+// Re-corre el pipeline (scrape + LLM) sobre un sitio existente. Solo admin.
+//   body {}              → re-analiza y GUARDA (comportamiento legacy)
+//   body {preview:true}  → re-analiza y devuelve qué quedaría, SIN guardar (+token)
+//   body {token}         → confirma una preview previa (guarda sin re-analizar)
+export async function POST(req, { params }) {
   const user = await getAuthedUser()
   if (!isAdmin(user)) {
     return Response.json({ error: 'Solo el admin puede reindexar.' }, { status: 403 })
   }
   const { id } = await params
-  const existing = getSitioById(Number(id))
+  const sid = Number(id)
+  const existing = getSitioById(sid)
   if (!existing) return Response.json({ error: 'No existe.' }, { status: 404 })
+
+  let body = {}
+  try {
+    body = await req.json()
+  } catch {}
+
+  // Confirmar preview por token (sin re-analizar).
+  const token = (body?.token || '').toString().trim()
+  if (token) {
+    const cached = takePreview(token)
+    if (!cached || cached.kind !== 'reindex' || cached.id !== sid) {
+      return Response.json({ error: 'La previsualización expiró. Volvé a previsualizar.' }, { status: 410 })
+    }
+    const sitio = updateSitioContent(sid, { ...cached.analisis, imagen: cached.imagen })
+    return Response.json({ sitio })
+  }
 
   let scraped
   try {
@@ -30,6 +51,12 @@ export async function POST(_req, { params }) {
     return Response.json({ error: `No se pudo analizar: ${e.message}` }, { status: 502 })
   }
 
-  const sitio = updateSitioContent(Number(id), { ...analisis, imagen: scraped.imagen })
+  // Preview: cacheamos y devolvemos sin guardar.
+  if (body?.preview) {
+    const tk = putPreview({ kind: 'reindex', id: sid, analisis, imagen: scraped.imagen })
+    return Response.json({ token: tk, preview: { ...analisis, url: existing.url, imagen: scraped.imagen } })
+  }
+
+  const sitio = updateSitioContent(sid, { ...analisis, imagen: scraped.imagen })
   return Response.json({ sitio })
 }
