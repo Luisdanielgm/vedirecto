@@ -3,6 +3,7 @@ import { rateLimit, clientIp } from '../../../lib/ratelimit'
 import { createClient } from '../../../lib/supabase/server'
 import { ingestUrl } from '../../../lib/ingest'
 import { takePreview } from '../../../lib/preview-cache'
+import { logAccion } from '../../../lib/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,7 @@ export async function POST(req) {
   if (!user) {
     return Response.json({ error: 'Iniciá sesión con Google para agregar un sitio.' }, { status: 401 })
   }
+  logAccion(req, user.email, 'alta')
 
   let body
   try {

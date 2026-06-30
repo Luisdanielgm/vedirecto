@@ -93,7 +93,19 @@ export default function AdminPage() {
   const reindex = async (s) => {
     setBusy(s.id)
     try {
-      const r = await fetch(`/api/sitios/${s.id}/reindex`, { method: 'POST' })
+      // Paso 1: preview (no guarda).
+      const pr = await fetch(`/api/sitios/${s.id}/reindex`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preview: true }),
+      })
+      const pd = await pr.json().catch(() => ({}))
+      if (!pr.ok || !pd.token) { alert(pd.error || 'No se pudo previsualizar.'); return }
+      const a = pd.preview || {}
+      const apiInfo = a.api?.tiene ? `API: sí (${(a.endpoints || []).length} endpoints)` : 'API: no'
+      if (!confirm(`Reindex de "${a.nombre}"\nRiesgo: ${a.riesgo}\nCategorías: ${(a.categorias || []).join(', ')}\n${apiInfo}\n\n¿Guardar los cambios?`)) return
+      // Paso 2: confirmar por token (sin re-analizar).
+      const r = await fetch(`/api/sitios/${s.id}/reindex`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: pd.token }),
+      })
       const d = await r.json().catch(() => ({}))
       if (r.ok && d.sitio) {
         alert(`Reindexado: riesgo "${d.sitio.riesgo}".${d.sitio.riesgo === 'seguro' ? ' Ya podés Publicarlo.' : ''}`)

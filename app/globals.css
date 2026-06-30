@@ -147,6 +147,25 @@ a { color: inherit; text-decoration: none; }
   border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer;
 }
 .google-btn:hover { opacity: .9; }
+
+/* --- Vista previa antes de agregar --- */
+.preview-card { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.preview-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.preview-head h3 { margin: 0; font-size: 16px; }
+.preview-url { color: var(--muted); font-size: 12px; margin: 0; word-break: break-all; }
+.preview-cats { display: flex; flex-wrap: wrap; gap: 5px; }
+.preview-desc { color: var(--text); font-size: 13px; margin: 4px 0 0; line-height: 1.45; }
+.preview-riesgo { font-size: 12.5px; border-radius: 8px; padding: 8px 10px; border: 1px solid var(--border); }
+.preview-riesgo.seguro { border-color: #2f6b4d; color: #8fe0b3; }
+.preview-riesgo.dudoso { border-color: #6b5a1f; color: #e8c970; }
+.preview-riesgo.peligroso { border-color: #6b2f2f; color: #f0a0a0; }
+.preview-api { font-size: 12.5px; border-top: 1px solid var(--border); padding-top: 8px; color: var(--muted); }
+.preview-api ul { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+.preview-api code { background: var(--surface-2); padding: 1px 6px; border-radius: 5px; color: #6ba3e0; font-size: 11.5px; }
+.preview-funcs { color: var(--muted); font-size: 12px; margin: 0; }
+.preview-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.preview-actions .hint { margin: 0; }
+
 .modal-close { margin-top: 18px; display: flex; justify-content: flex-end; gap: 16px; }
 .modal-close button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; }
 .modal-close button:hover { color: var(--text); }
