@@ -131,30 +131,60 @@ function AddModal({ onClose, onAdded }) {
     setUser(null)
   }
 
-  const submit = async (e) => {
+  // Paso 1: previsualizar (no guarda nada).
+  const previsualizar = async (e) => {
     e.preventDefault()
     if (!url.trim()) return
+    setBusy(true)
+    setMsg(null)
+    setPreview(null)
+    try {
+      const r = await fetch('/api/sitios/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url.trim() }),
+      })
+      const data = await r.json().catch(() => ({}))
+      if (r.ok) setPreview(data)
+      else setMsg({ tipo: 'err', texto: data.error || `No se pudo previsualizar (${r.status}).` })
+    } catch {
+      setMsg({ tipo: 'err', texto: 'Error de red.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Paso 2: confirmar el alta usando el token de la preview.
+  const confirmar = async () => {
+    if (!preview?.token) return
     setBusy(true)
     setMsg(null)
     try {
       const r = await fetch('/api/sitios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ token: preview.token }),
       })
       const data = await r.json().catch(() => ({}))
       if (r.ok) {
         setMsg({ tipo: 'ok', texto: `"${data.sitio?.nombre || 'Sitio'}" agregado.` })
         if (data.sitio) onAdded(data.sitio)
         setUrl('')
+        setPreview(null)
       } else {
         setMsg({ tipo: 'err', texto: data.error || `No se pudo agregar (${r.status}).` })
+        setPreview(null)
       }
     } catch {
       setMsg({ tipo: 'err', texto: 'Error de red.' })
     } finally {
       setBusy(false)
     }
+  }
+
+  const reset = () => {
+    setPreview(null)
+    setMsg(null)
   }
 
   return (
@@ -171,12 +201,14 @@ function AddModal({ onClose, onAdded }) {
             <p className="hint">Iniciá sesión con Google para agregar un sitio. El análisis lo hace una IA, por eso pedimos login.</p>
             <button className="google-btn" onClick={login}>Iniciar sesión con Google</button>
           </>
+        ) : preview ? (
+          <PreviewBlock data={preview} busy={busy} onConfirm={confirmar} onBack={reset} />
         ) : (
           <>
-            <p className="hint">Pega el link. Una IA extrae los datos y revisa que sea seguro.</p>
-            <form className="modal-form" onSubmit={submit}>
+            <p className="hint">Pega el link. Una IA lo analiza y te muestra una vista previa antes de agregarlo.</p>
+            <form className="modal-form" onSubmit={previsualizar}>
               <input type="url" placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} autoFocus />
-              <button type="submit" disabled={busy}>{busy ? 'Analizando…' : 'Agregar'}</button>
+              <button type="submit" disabled={busy}>{busy ? 'Analizando…' : 'Previsualizar'}</button>
             </form>
           </>
         )}
@@ -187,6 +219,63 @@ function AddModal({ onClose, onAdded }) {
           {user && <button type="button" onClick={logout}>Cerrar sesión</button>}
           <button type="button" onClick={onClose}>Cerrar</button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// Vista previa de lo que se agregaría. Solo deja confirmar si el riesgo es seguro.
+function PreviewBlock({ data, busy, onConfirm, onBack }) {
+  const { status, nota, preview: p } = data
+  if (status === 'duplicado') {
+    return (
+      <>
+        <p className="modal-msg err">{nota ? `Parece el mismo recurso que ya está: "${nota}".` : 'Ese sitio ya está en el directorio.'}</p>
+        <button className="google-btn" onClick={onBack}>Probar otra URL</button>
+      </>
+    )
+  }
+  if (!p) return <button className="google-btn" onClick={onBack}>Volver</button>
+
+  const tieneApi = p.api?.tiene || (p.endpoints || []).length > 0
+  return (
+    <div className="preview-card">
+      <div className="preview-head">
+        <h3>{p.nombre}</h3>
+        <span className={`estado ${p.estado}`}>{p.estado}</span>
+      </div>
+      <p className="preview-url">{p.url}</p>
+      {p.categorias?.length > 0 && (
+        <div className="preview-cats">{p.categorias.map((c) => <span className="cat-chip" key={c}>{c}</span>)}</div>
+      )}
+      {p.descripcion && <p className="preview-desc">{p.descripcion}</p>}
+
+      <div className={`preview-riesgo ${p.riesgo}`}>
+        <b>Riesgo: {p.riesgo}</b>{p.motivo_riesgo ? ` — ${p.motivo_riesgo}` : ''}
+      </div>
+      {status === 'no-relevante' && (
+        <div className="preview-riesgo dudoso"><b>No relevante</b>{nota ? ` — ${nota}` : ''}</div>
+      )}
+
+      {tieneApi && (
+        <div className="preview-api">
+          <b>API {p.api?.auth ? `(${p.api.auth})` : ''}</b>
+          {(p.endpoints || []).length > 0 && (
+            <ul>{p.endpoints.map((e, i) => <li key={i}><code>{e}</code></li>)}</ul>
+          )}
+        </div>
+      )}
+      {p.funcionalidades?.length > 0 && (
+        <p className="preview-funcs">{p.funcionalidades.join(' · ')}</p>
+      )}
+
+      <div className="preview-actions">
+        <button className="del" onClick={onBack} disabled={busy}>Volver</button>
+        {status === 'ok' ? (
+          <button className="add-btn" onClick={onConfirm} disabled={busy}>{busy ? 'Agregando…' : 'Confirmar y agregar'}</button>
+        ) : (
+          <span className="hint">No se puede publicar{status === 'no-relevante' ? ' (no relevante)' : ` (riesgo ${p.riesgo})`}.</span>
+        )}
       </div>
     </div>
   )
