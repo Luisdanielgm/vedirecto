@@ -112,7 +112,18 @@ function Card({ s, isAdmin, dev, busy, onBorrar, onReindex }) {
   const [openTags, setOpenTags] = useState(false)
   const [openApi, setOpenApi] = useState(false)
 
-  const visit = () => { if (s.url) window.open(s.url, '_blank', 'noopener,noreferrer') }
+  const visit = () => {
+    if (!s.url) return
+    try {
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo: 'click', sitioId: s.id }),
+        keepalive: true,
+      })
+    } catch {}
+    window.open(s.url, '_blank', 'noopener,noreferrer')
+  }
   const stop = (e) => e.stopPropagation()
   const tags = s.tags || []
   const cats = s.categorias || []

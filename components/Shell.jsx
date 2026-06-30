@@ -16,6 +16,14 @@ export default function Shell({ sitios: inicial, noticias }) {
       .then((d) => setIsAdmin(!!d.isAdmin))
       .catch(() => {})
     setDev(localStorage.getItem('vedirecto_dev') === '1')
+    try {
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipo: 'pagina' }),
+        keepalive: true,
+      })
+    } catch {}
   }, [])
 
   const toggleDev = () => {

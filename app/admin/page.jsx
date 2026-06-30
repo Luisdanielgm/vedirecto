@@ -9,9 +9,12 @@ export default function AdminPage() {
   const [importing, setImporting] = useState(false)
   const [report, setReport] = useState(null)
   const [busy, setBusy] = useState(null)
+  const [stats, setStats] = useState(null)
 
   const loadSitios = () =>
     fetch('/api/admin/sitios').then((r) => (r.ok ? r.json() : [])).then(setSitios).catch(() => {})
+  const loadStats = () =>
+    fetch('/api/admin/stats').then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => {})
 
   useEffect(() => {
     fetch('/api/me')
@@ -19,7 +22,10 @@ export default function AdminPage() {
       .then((d) => {
         setAdmin(!!d.isAdmin)
         setReady(true)
-        if (d.isAdmin) loadSitios()
+        if (d.isAdmin) {
+          loadSitios()
+          loadStats()
+        }
       })
       .catch(() => setReady(true))
   }, [])
@@ -90,6 +96,35 @@ export default function AdminPage() {
       </div>
 
       <h1 className="headline">Panel admin</h1>
+
+      <section className="admin-section">
+        <h2>Visitas</h2>
+        {!stats ? (
+          <p className="lead">Cargando métricas…</p>
+        ) : (
+          <>
+            <div className="stats-row">
+              <div className="stat"><span className="stat-n">{stats.total}</span><span className="stat-l">visitas a la página</span></div>
+              <div className="stat"><span className="stat-n">{stats.totalClicks}</span><span className="stat-l">clics a sitios</span></div>
+            </div>
+            {stats.porDia?.length > 0 && (
+              <div className="stats-dias">
+                {stats.porDia.map((d) => (
+                  <div className="dia" key={d.dia}><span>{d.dia.slice(5)}</span><b>{d.n}</b></div>
+                ))}
+              </div>
+            )}
+            {stats.topSitios?.length > 0 && (
+              <div className="top-sitios">
+                <div className="top-title">Más clickeados</div>
+                {stats.topSitios.map((t, i) => (
+                  <div className="top-row" key={i}><span>{t.nombre || '(borrado)'}</span><b>{t.n}</b></div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </section>
 
       <section className="admin-section">
         <h2>Importar por lotes</h2>
