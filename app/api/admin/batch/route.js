@@ -1,5 +1,6 @@
 import { getAuthedUser, isAdmin } from '../../../../lib/auth'
 import { ingestUrl } from '../../../../lib/ingest'
+import { normalizeUrl } from '../../../../lib/url-utils'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
@@ -20,9 +21,18 @@ export async function POST(req) {
     return Response.json({ error: 'JSON inválido.' }, { status: 400 })
   }
 
-  const urls = [...new Set((Array.isArray(body?.urls) ? body.urls : [])
-    .map((u) => String(u).trim())
-    .filter(Boolean))]
+  // Dedup del input por URL NORMALIZADA (no solo exacta): así www.x.com y x.com
+  // no se procesan las dos, ni siquiera en el mismo trío concurrente.
+  const seen = new Set()
+  const urls = []
+  for (const raw of Array.isArray(body?.urls) ? body.urls : []) {
+    const u = String(raw).trim()
+    if (!u) continue
+    const k = normalizeUrl(u)
+    if (seen.has(k)) continue
+    seen.add(k)
+    urls.push(u)
+  }
   if (urls.length === 0) return Response.json({ error: 'Pasá una lista de URLs.' }, { status: 400 })
   if (urls.length > MAX) {
     return Response.json({ error: `Máximo ${MAX} por tanda (mandaste ${urls.length}). Pegá en partes.` }, { status: 400 })
