@@ -68,7 +68,9 @@ export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, 
     <section>
       <h1 className="headline">Sitios que ayudan</h1>
       <p className="lead">
-        {sitios.length} {sitios.length === 1 ? 'sitio' : 'sitios'} organizados por categoría.
+        {query || cat
+          ? `${filtered.length} ${filtered.length === 1 ? 'resultado' : 'resultados'}${cat ? ` · ${cat}` : ''}`
+          : `${sitios.length} ${sitios.length === 1 ? 'sitio' : 'sitios'} organizados por categoría.`}
       </p>
 
       <div className="searchbar">
