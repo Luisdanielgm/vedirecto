@@ -6,6 +6,9 @@
   --border-strong: #363636;
   --text: #fafafa;
   --muted: #8a8a8a;
+  --ok: #5bc08a;
+  --warn: #e0b341;
+  --danger: #f06a6a;
   --radius: 14px;
 }
 
@@ -92,7 +95,6 @@ a { color: inherit; text-decoration: none; }
 .card-link { cursor: pointer; display: flex; padding: 0; overflow: hidden; }
 .card-link:hover { border-color: var(--border-strong); }
 .card-body { flex: 1; min-width: 0; padding: 14px 16px; }
-.thumb-full { width: 96px; flex-shrink: 0; object-fit: cover; align-self: stretch; border-right: 1px solid var(--border); background: var(--surface-2); }
 .card-head-row { display: flex; align-items: center; gap: 8px; }
 .favicon { width: 18px; height: 18px; flex-shrink: 0; border-radius: 4px; }
 .card h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.3; }
@@ -126,8 +128,17 @@ a { color: inherit; text-decoration: none; }
 .api-funcs { color: var(--muted); }
 
 @media (max-width: 680px) { .grid2 { grid-template-columns: 1fr; } }
-.card .fecha { color: var(--muted); font-size: 12px; }
 .empty { color: var(--muted); font-size: 14px; padding: 30px 0; text-align: center; }
+
+/* --- Noticias --- */
+.news-card { cursor: pointer; }
+.news-top { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.news-source { font-size: 12px; font-weight: 600; color: var(--text); }
+.news-top .fecha { margin-left: auto; }
+.news-card h3 { margin: 0; font-size: 15.5px; line-height: 1.35; }
+.news-card .desc { margin-top: 8px; }
+.news-read { color: var(--muted); font-size: 12.5px; margin-top: 11px; display: inline-block; transition: color .15s ease; }
+.news-card:hover .news-read { color: var(--text); }
 
 /* --- Modal --- */
 .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
@@ -209,6 +220,5 @@ a { color: inherit; text-decoration: none; }
   .bar { padding-top: 20px; flex-wrap: wrap; gap: 10px; }
   .lead { font-size: 15px; }
   .add-btn { padding: 8px 13px; font-size: 13px; }
-  .thumb-full { width: 76px; }
   .headline { font-size: 30px; }
 }

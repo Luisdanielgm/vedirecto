@@ -4,6 +4,17 @@ import DirectorioPanel from './DirectorioPanel'
 import PreviewCard from './PreviewCard'
 import { createClient } from '../lib/supabase/client'
 
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+function hostOf(url) {
+  try { return new URL(url).hostname.replace(/^www\./, '') } catch { return '' }
+}
+// Formatea fechas ISO (YYYY-MM-DD) de forma determinista; deja el resto como viene.
+function fmtFecha(f) {
+  if (!f) return ''
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f)
+  return m ? `${Number(m[3])} ${MESES[Number(m[2]) - 1]} ${m[1]}` : f
+}
+
 export default function Shell({ sitios: inicial, noticias }) {
   const [tab, setTab] = useState('directorio')
   const [sitios, setSitios] = useState(inicial)
@@ -68,16 +79,7 @@ export default function Shell({ sitios: inicial, noticias }) {
         <section>
           <h1 className="headline">Lo que está pasando</h1>
           <div className="list">
-            {noticias.map((n) => (
-              <article className="card" key={n.id}>
-                <div className="row">
-                  <h3>{n.titulo}</h3>
-                  {n.fecha && <span className="fecha">{n.fecha}</span>}
-                </div>
-                {n.resumen && <p className="desc">{n.resumen}</p>}
-                {n.url && <div className="meta"><a className="visit" href={n.url} target="_blank" rel="noreferrer">Leer</a></div>}
-              </article>
-            ))}
+            {noticias.map((n) => <NewsCard key={n.id} n={n} />)}
             {noticias.length === 0 && <p className="empty">Todavía no hay noticias.</p>}
           </div>
         </section>
@@ -243,4 +245,33 @@ function PreviewBlock({ data, busy, onConfirm, onBack }) {
       </div>
     )
   return <PreviewCard data={data}>{actions}</PreviewCard>
+}
+
+// Card de noticia: muestra el medio (con favicon) y la fecha; toda la card abre la nota.
+function NewsCard({ n }) {
+  const host = hostOf(n.url)
+  const source = n.fuente || host
+  const favicon = host ? `https://www.google.com/s2/favicons?domain=${host}&sz=64` : ''
+  const fecha = fmtFecha(n.fecha)
+  const open = () => { if (n.url) window.open(n.url, '_blank', 'noopener,noreferrer') }
+  return (
+    <article
+      className="card news-card"
+      onClick={open}
+      onKeyDown={(e) => { if (e.key === 'Enter') open() }}
+      role={n.url ? 'link' : undefined}
+      tabIndex={n.url ? 0 : undefined}
+    >
+      {(source || fecha) && (
+        <div className="news-top">
+          {favicon && <img className="favicon" src={favicon} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} />}
+          {source && <span className="news-source">{source}</span>}
+          {fecha && <span className="fecha">{fecha}</span>}
+        </div>
+      )}
+      <h3>{n.titulo}</h3>
+      {n.resumen && <p className="desc">{n.resumen}</p>}
+      {n.url && <span className="news-read">Leer →</span>}
+    </article>
+  )
 }
