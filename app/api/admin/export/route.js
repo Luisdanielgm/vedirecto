@@ -18,6 +18,7 @@ export async function GET() {
     headers: {
       'Content-Type': 'application/json',
       'Content-Disposition': 'attachment; filename="vedirecto-backup.json"',
+      'Cache-Control': 'no-store, private', // datos internos: nunca cachear
     },
   })
 }

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { registrarVisita } from '../../../lib/db'
+import { registrarVisita, getSitioById } from '../../../lib/db'
 import { clientIp, rateLimit } from '../../../lib/ratelimit'
 
 export const dynamic = 'force-dynamic'
@@ -34,7 +34,9 @@ export async function POST(req) {
   }
   const tipo = b?.tipo === 'click' ? 'click' : b?.tipo === 'pagina' ? 'pagina' : null
   if (!tipo) return new Response(null, { status: 400 })
-  const sitioId = Number.isInteger(b?.sitioId) ? b.sitioId : null
+  // El sitioId solo cuenta si el sitio existe de verdad (evita envenenar el ranking).
+  let sitioId = Number.isInteger(b?.sitioId) ? b.sitioId : null
+  if (sitioId !== null && !getSitioById(sitioId)) sitioId = null
   try {
     registrarVisita(tipo, sitioId, visitanteHash(req))
   } catch {}

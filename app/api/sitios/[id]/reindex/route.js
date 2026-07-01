@@ -30,7 +30,7 @@ export async function POST(req, { params }) {
   // Confirmar preview por token (sin re-analizar).
   const token = (body?.token || '').toString().trim()
   if (token) {
-    const cached = takePreview(token)
+    const cached = takePreview(token, user.email)
     if (!cached || cached.kind !== 'reindex' || cached.id !== sid) {
       return Response.json({ error: 'La previsualización expiró. Volvé a previsualizar.' }, { status: 410 })
     }
@@ -66,7 +66,7 @@ export async function POST(req, { params }) {
 
   // Preview: cacheamos y devolvemos sin guardar.
   if (body?.preview) {
-    const tk = putPreview({ kind: 'reindex', id: sid, analisis, imagen: scraped.imagen })
+    const tk = putPreview({ kind: 'reindex', id: sid, analisis, imagen: scraped.imagen }, user.email)
     return Response.json({ token: tk, preview: { ...analisis, url: existing.url, imagen: scraped.imagen } })
   }
 

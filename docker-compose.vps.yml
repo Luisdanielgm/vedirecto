@@ -9,8 +9,15 @@ services:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
     restart: unless-stopped
+    # Tope de memoria: si algo se descontrola (scrape a un sitio gigante, ráfaga de
+    # altas), muere SOLO este contenedor y NO arrastra a Dokploy/Traefik por un OOM
+    # del host (los 4GB son compartidos). El heap de Node queda debajo del límite.
+    mem_limit: 768m
     environment:
       - DATA_DIR=/app/data
+      - NODE_OPTIONS=--max-old-space-size=512
+      # Host canónico para el redirect post-login (evita open redirect). Ej: https://vedirecto.es
+      - SITE_URL=${SITE_URL:-}
       # Definí estas en el panel Environment de Dokploy (NUNCA en el repo).
       - CAUCE_API_KEY=${CAUCE_API_KEY:?defini CAUCE_API_KEY en Dokploy}
       - CAUCE_BASE_URL=${CAUCE_BASE_URL:-https://api.cauce.me/v1}

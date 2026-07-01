@@ -58,7 +58,7 @@ export async function POST(req) {
   }
 
   // ok | dudoso | peligroso → guardable: cacheamos el análisis y devolvemos token.
-  const token = putPreview({ kind: 'add', analisis: r.analisis, finalUrl: r.finalUrl, imagen: r.imagen })
+  const token = putPreview({ kind: 'add', analisis: r.analisis, finalUrl: r.finalUrl, imagen: r.imagen }, user.email)
   return Response.json({ status: r.status, token, preview: previewView(r) })
 }
 

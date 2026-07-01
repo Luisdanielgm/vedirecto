@@ -1,27 +1,22 @@
-import { getAuthedUser, isAdmin } from '../../../../lib/auth'
-import { backupDb } from '../../../../lib/db'
+import { cronAuthorized } from '../../../../lib/auth'
+import { backupDb, podarVisitas, podarAuditoria } from '../../../../lib/db'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-// Snapshot del SQLite al volumen (DATA_DIR/backups), con rotación.
-// Autorización: header x-cron-secret (o ?secret=) == CRON_SECRET, o sesión admin.
-async function autorizado(req) {
-  const secret = process.env.CRON_SECRET
-  const provided = req.headers.get('x-cron-secret') || new URL(req.url).searchParams.get('secret') || ''
-  if (secret && provided && provided === secret) return true
-  const user = await getAuthedUser()
-  return isAdmin(user)
-}
-
+// Snapshot del SQLite al volumen (DATA_DIR/backups) + poda de datos viejos.
+// Autorización: header x-cron-secret == CRON_SECRET (tiempo constante), o sesión admin.
 async function correr(req) {
-  if (!(await autorizado(req))) return Response.json({ error: 'No autorizado.' }, { status: 403 })
+  if (!(await cronAuthorized(req))) return Response.json({ error: 'No autorizado.' }, { status: 403 })
   const keep = Number(new URL(req.url).searchParams.get('keep')) || 14
   try {
     const r = backupDb({ keep })
-    return Response.json({ ok: true, ...r })
+    const visitasPodadas = podarVisitas(90)
+    const auditoriaPodada = podarAuditoria(180)
+    return Response.json({ ok: true, ...r, visitasPodadas, auditoriaPodada })
   } catch (e) {
-    return Response.json({ ok: false, error: e?.message || 'Falló el backup.' }, { status: 500 })
+    console.error('backup falló:', e?.message || e)
+    return Response.json({ ok: false, error: 'No se pudo completar el backup.' }, { status: 500 })
   }
 }
 

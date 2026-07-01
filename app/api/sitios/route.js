@@ -47,12 +47,15 @@ export async function POST(req) {
   // Confirmar una previsualización por token (no re-analiza, usa lo cacheado).
   const token = (body?.token || '').toString().trim()
   if (token) {
-    const cached = takePreview(token)
+    const cached = takePreview(token, user.email)
     if (!cached || cached.kind !== 'add') {
       return Response.json({ error: 'La previsualización expiró. Volvé a previsualizar.' }, { status: 410 })
     }
     const a = cached.analisis
-    const { id, estado } = addSitio({ ...a, finalUrl: cached.finalUrl, imagen: cached.imagen })
+    const { id, estado, duplicate } = addSitio({ ...a, finalUrl: cached.finalUrl, imagen: cached.imagen })
+    if (duplicate) {
+      return Response.json({ error: 'Ese sitio ya está en el directorio.' }, { status: 409 })
+    }
     if (a.riesgo !== 'seguro') {
       return Response.json(
         { error: `El sitio no se publicó (riesgo: ${a.riesgo}). ${a.motivo_riesgo || ''}`.trim(), riesgo: a.riesgo },

@@ -8,10 +8,16 @@ export async function GET(request) {
   const code = searchParams.get('code')
 
   // Detrás de Traefik/Dokploy, request.url trae el host interno (0.0.0.0:3000).
-  // Usamos el host reenviado para que el redirect caiga en el dominio público.
+  // Host canónico: si SITE_URL está seteado, SIEMPRE redirigimos ahí (evita open
+  // redirect por x-forwarded-host spoofeado). Si no, caemos al forwarded/origin.
   const forwardedHost = request.headers.get('x-forwarded-host')
   const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https'
-  const base = forwardedHost ? `${forwardedProto}://${forwardedHost}` : origin
+  const canonical = process.env.SITE_URL
+  const base = canonical
+    ? canonical.replace(/\/$/, '')
+    : forwardedHost
+      ? `${forwardedProto}://${forwardedHost}`
+      : origin
 
   if (code) {
     const supabase = await createClient()
