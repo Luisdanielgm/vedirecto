@@ -1,6 +1,6 @@
 import { previewUrl } from '../../../../lib/ingest'
 import { putPreview } from '../../../../lib/preview-cache'
-import { rateLimit, clientIp } from '../../../../lib/ratelimit'
+import { rateLimit, clientIp, analisisCap } from '../../../../lib/ratelimit'
 import { createClient } from '../../../../lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +30,15 @@ export async function POST(req) {
   }
   if (!user) {
     return Response.json({ error: 'Iniciá sesión con Google para previsualizar.' }, { status: 401 })
+  }
+
+  // Tope diario de análisis con IA (protege los créditos de Cauce).
+  const cap = analisisCap(user.email)
+  if (!cap.ok) {
+    return Response.json(
+      { error: `Se alcanzó ${cap.scope} de análisis. Probá de nuevo mañana.` },
+      { status: 429, headers: { 'Retry-After': String(cap.resetIn) } }
+    )
   }
 
   let body

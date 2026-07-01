@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { registrarVisita } from '../../../lib/db'
-import { clientIp } from '../../../lib/ratelimit'
+import { clientIp, rateLimit } from '../../../lib/ratelimit'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +20,12 @@ function visitanteHash(req) {
 
 // Registra una visita de página o un clic a un sitio. Público, sin datos personales.
 export async function POST(req) {
+  // Límite generoso anti-spam: evita que inflen la tabla `visitas`. Un humano
+  // navegando no lo roza; un bot machacando el endpoint, sí. Clave namespaced
+  // ('track:') para no compartir contador con el alta de sitios.
+  const rl = rateLimit(`track:${clientIp(req)}`, { max: 120, windowMs: 60 * 1000 })
+  if (!rl.ok) return new Response(null, { status: 204 }) // se descarta en silencio
+
   let b
   try {
     b = await req.json()

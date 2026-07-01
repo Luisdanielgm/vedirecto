@@ -1,5 +1,5 @@
 import { listSitios, addSitio } from '../../../lib/db'
-import { rateLimit, clientIp } from '../../../lib/ratelimit'
+import { rateLimit, clientIp, analisisCap } from '../../../lib/ratelimit'
 import { createClient } from '../../../lib/supabase/server'
 import { ingestUrl } from '../../../lib/ingest'
 import { takePreview } from '../../../lib/preview-cache'
@@ -67,6 +67,15 @@ export async function POST(req) {
 
   const url = (body?.url || '').toString().trim()
   if (!url) return Response.json({ error: 'Falta "url".' }, { status: 400 })
+
+  // Tope diario de análisis con IA (alta directa sin token = gasta un llamado a Cauce).
+  const cap = analisisCap(user.email)
+  if (!cap.ok) {
+    return Response.json(
+      { error: `Se alcanzó ${cap.scope} de análisis. Probá de nuevo mañana.` },
+      { status: 429, headers: { 'Retry-After': String(cap.resetIn) } }
+    )
+  }
 
   const r = await ingestUrl(url)
   switch (r.status) {
