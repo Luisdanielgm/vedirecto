@@ -87,7 +87,7 @@ export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, 
 
       {cats.length > 0 && (
         <div className="pills">
-          <button className={cat === null ? 'pill active' : 'pill'} style={{ '--c': '#fafafa' }} onClick={() => setCat(null)}>
+          <button className={cat === null ? 'pill active' : 'pill'} style={{ '--c': 'var(--muted)' }} onClick={() => setCat(null)}>
             Todos
           </button>
           {cats.map((c) => (
