@@ -5,6 +5,7 @@ import PreviewCard from './PreviewCard'
 import SiteAvatar from './SiteAvatar'
 import { createClient } from '../lib/supabase/client'
 
+const norm = (s) => (s ?? '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 function hostOf(url) {
   try { return new URL(url).hostname.replace(/^www\./, '') } catch { return '' }
@@ -23,6 +24,7 @@ export default function Shell({ sitios: inicial, noticias }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [dev, setDev] = useState(false)
   const [nvis, setNvis] = useState(10)
+  const [nq, setNq] = useState('')
 
   useEffect(() => {
     fetch('/api/me')
@@ -51,6 +53,12 @@ export default function Shell({ sitios: inicial, noticias }) {
   const onDeleted = (id) => setSitios((p) => p.filter((s) => s.id !== id))
   const onUpdated = (sitio) => setSitios((p) => p.map((s) => (s.id === sitio.id ? sitio : s)))
 
+  const noticiasFiltradas = nq
+    ? noticias.filter((n) => norm(`${n.titulo || ''} ${n.resumen || ''} ${n.fuente || ''}`).includes(norm(nq)))
+    : noticias
+  const noticiasMostradas = noticiasFiltradas.slice(0, nvis)
+  useEffect(() => { setNvis(10) }, [nq])
+
   return (
     <div className="wrap">
       <div className="bar">
@@ -77,13 +85,22 @@ export default function Shell({ sitios: inicial, noticias }) {
       ) : (
         <section>
           <h1 className="headline">Lo que está pasando</h1>
+          {noticias.length > 5 && (
+            <div className="searchbar">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+              </svg>
+              <input className="search" placeholder="Buscar en noticias…" value={nq} onChange={(e) => setNq(e.target.value)} />
+            </div>
+          )}
           <div className="list">
-            {noticias.slice(0, nvis).map((n) => <NewsCard key={n.id} n={n} />)}
+            {noticiasMostradas.map((n) => <NewsCard key={n.id} n={n} />)}
             {noticias.length === 0 && <p className="empty">Todavía no hay noticias.</p>}
+            {noticias.length > 0 && noticiasFiltradas.length === 0 && <p className="empty">Sin resultados.</p>}
           </div>
-          {noticias.length > nvis && (
+          {noticiasFiltradas.length > nvis && (
             <button className="load-more" onClick={() => setNvis((v) => v + 10)}>
-              Ver más noticias <span>{noticias.length - nvis}</span>
+              Ver más noticias <span>{noticiasFiltradas.length - nvis}</span>
             </button>
           )}
         </section>

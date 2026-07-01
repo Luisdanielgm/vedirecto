@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import SiteAvatar from './SiteAvatar'
 
 const PAGE = 12
@@ -20,6 +20,8 @@ export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, 
   const [cat, setCat] = useState(null)
   const [busyId, setBusyId] = useState(null)
   const [visible, setVisible] = useState(PAGE)
+  const [sort, setSort] = useState('recientes')
+  const searchRef = useRef(null)
 
   const borrar = async (s) => {
     if (!confirm(`¿Borrar "${s.nombre}" del directorio?`)) return
@@ -53,41 +55,64 @@ export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, 
   }
 
   const cats = useMemo(() => {
-    const set = new Set()
-    sitios.forEach((s) => (s.categorias || []).forEach((c) => set.add(c)))
-    return [...set].sort((a, b) => a.localeCompare(b, 'es'))
+    const m = new Map()
+    sitios.forEach((s) => (s.categorias || []).forEach((c) => m.set(c, (m.get(c) || 0) + 1)))
+    return [...m.entries()].map(([name, n]) => ({ name, n })).sort((a, b) => a.name.localeCompare(b.name, 'es'))
   }, [sitios])
 
   const filtered = useMemo(() => {
     const q = norm(query)
-    return sitios.filter((s) => {
+    const out = sitios.filter((s) => {
       const hay = norm([s.nombre, s.descripcion, (s.categorias || []).join(' '), (s.tags || []).join(' ')].join(' '))
       const okQ = !q || hay.includes(q)
       const okC = !cat || (s.categorias || []).includes(cat)
       return okQ && okC
     })
-  }, [sitios, query, cat])
+    if (sort === 'az') out.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
+    return out
+  }, [sitios, query, cat, sort])
 
-  // Al cambiar búsqueda o categoría, volver a la primera página.
-  useEffect(() => { setVisible(PAGE) }, [query, cat])
+  // Al cambiar búsqueda, categoría u orden, volver a la primera página.
+  useEffect(() => { setVisible(PAGE) }, [query, cat, sort])
+
+  // Atajo "/" para enfocar el buscador.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) {
+        e.preventDefault()
+        searchRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
   const mostrados = filtered.slice(0, visible)
 
   return (
     <section>
       <h1 className="headline">Sitios que ayudan</h1>
-      <p className="lead">
-        {query || cat
-          ? `${filtered.length} ${filtered.length === 1 ? 'resultado' : 'resultados'}${cat ? ` · ${cat}` : ''}`
-          : `${sitios.length} ${sitios.length === 1 ? 'sitio' : 'sitios'} organizados por categoría.`}
-      </p>
+      <div className="list-head">
+        <p className="lead">
+          {query || cat
+            ? `${filtered.length} ${filtered.length === 1 ? 'resultado' : 'resultados'}${cat ? ` · ${cat}` : ''}`
+            : `${sitios.length} ${sitios.length === 1 ? 'sitio' : 'sitios'} organizados por categoría.`}
+        </p>
+        {sitios.length > 1 && (
+          <select className="sort" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Ordenar">
+            <option value="recientes">Recientes</option>
+            <option value="az">A–Z</option>
+          </select>
+        )}
+      </div>
 
       <div className="searchbar">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
         </svg>
         <input
+          ref={searchRef}
           className="search"
-          placeholder="Buscar por nombre o descripción…"
+          placeholder="Buscar por nombre o descripción…  ( / )"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -96,16 +121,16 @@ export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, 
       {cats.length > 0 && (
         <div className="pills">
           <button className={cat === null ? 'pill active' : 'pill'} style={{ '--c': 'var(--muted)' }} onClick={() => setCat(null)}>
-            Todos
+            Todos <span className="pill-n">{sitios.length}</span>
           </button>
           {cats.map((c) => (
             <button
-              key={c}
-              className={cat === c ? 'pill active' : 'pill'}
-              style={{ '--c': colorFor(c) }}
-              onClick={() => setCat(cat === c ? null : c)}
+              key={c.name}
+              className={cat === c.name ? 'pill active' : 'pill'}
+              style={{ '--c': colorFor(c.name) }}
+              onClick={() => setCat(cat === c.name ? null : c.name)}
             >
-              {c}
+              {c.name} <span className="pill-n">{c.n}</span>
             </button>
           ))}
         </div>

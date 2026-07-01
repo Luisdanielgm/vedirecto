@@ -59,6 +59,10 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: -0.01em; margin: 0;
 }
 .lead { color: var(--muted); font-size: 14.5px; max-width: 52ch; margin: 8px 0 20px; }
+.list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.sort { flex-shrink: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 12.5px; padding: 6px 9px; cursor: pointer; }
+.sort:hover { color: var(--text); border-color: var(--border-strong); }
+.sort:focus { outline: none; border-color: var(--border-strong); }
 .headline + .list { margin-top: 22px; }
 
 /* --- Buscador grande con ícono --- */
@@ -86,11 +90,15 @@ a { color: inherit; text-decoration: none; }
 .pill:hover { color: var(--text); border-color: var(--border-strong); }
 .pill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
 .pill.active::before { background: var(--bg); }
+.pill-n { font-size: 11px; color: var(--muted); }
+.pill.active .pill-n { color: var(--bg); opacity: .7; }
 
 /* --- Cards --- */
 .list { display: flex; flex-direction: column; gap: 12px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: border-color .15s ease; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: border-color .15s ease; animation: fadeIn .25s ease both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .card { animation: none; } }
 .card:hover { border-color: var(--border-strong); }
 .card-link { cursor: pointer; display: flex; padding: 0; overflow: hidden; }
 .card-link:hover { border-color: var(--border-strong); }
