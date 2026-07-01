@@ -57,7 +57,11 @@ export async function POST(req, { params }) {
     !analisis.descripcion ||
     (analisis.categorias?.length === 1 && analisis.categorias[0] === 'Otros') ||
     (analisis.riesgo === 'dudoso' && /no se pudo analizar/i.test(analisis.motivo_riesgo || ''))
-  if (pobre) {
+  // API incierta → que el agente navegue docs/api/github y PRUEBE los endpoints.
+  const apiIncierta =
+    (scraped.links?.length > 0 && !analisis.api?.tiene) ||
+    (analisis.api?.tiene && !analisis.api?.verificada)
+  if (pobre || apiIncierta) {
     try {
       const ag = await analizarConAgente(existing.url, { reindex: true })
       if (ag && ag.descripcion) analisis = ag
