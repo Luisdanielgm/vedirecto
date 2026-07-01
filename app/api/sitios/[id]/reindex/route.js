@@ -47,7 +47,7 @@ export async function POST(req, { params }) {
 
   let analisis
   try {
-    analisis = await analizarSitio(scraped)
+    analisis = await analizarSitio({ ...scraped, reindex: true })
   } catch (e) {
     return Response.json({ error: `No se pudo analizar: ${e.message}` }, { status: 502 })
   }
@@ -59,7 +59,7 @@ export async function POST(req, { params }) {
     (analisis.riesgo === 'dudoso' && /no se pudo analizar/i.test(analisis.motivo_riesgo || ''))
   if (pobre) {
     try {
-      const ag = await analizarConAgente(existing.url, {})
+      const ag = await analizarConAgente(existing.url, { reindex: true })
       if (ag && ag.descripcion) analisis = ag
     } catch {}
   }
