@@ -15,6 +15,41 @@ function colorFor(cat) {
   return PALETTE[h % PALETTE.length]
 }
 
+// URL sondeable para un endpoint ("GET /api/x" + base_url → absoluta).
+function probeUrlFor(ep, base) {
+  const s = String(ep || '').replace(/^\s*(GET|POST|PUT|DELETE|PATCH)\s+/i, '').trim()
+  const abs = s.match(/https?:\/\/\S+/)
+  if (abs) return abs[0]
+  if (base && s.startsWith('/')) { try { return new URL(s, base).toString() } catch {} }
+  return null
+}
+
+// Botón de test en vivo (modo developer): sondea la URL vía /api/probe (proxy server-side, sin CORS).
+function ApiProbe({ url }) {
+  const [st, setSt] = useState(null)
+  if (!url) return null
+  const run = async (e) => {
+    e.stopPropagation()
+    setSt({ loading: true })
+    try {
+      const r = await fetch(`/api/probe?url=${encodeURIComponent(url)}`)
+      setSt(await r.json())
+    } catch {
+      setSt({ error: 'Error de red' })
+    }
+  }
+  return (
+    <span className="probe">
+      <button className="probe-btn" onClick={run} disabled={st?.loading}>{st?.loading ? 'Probando…' : '▶ Probar'}</button>
+      {st && !st.loading && (
+        <span className={`probe-res ${st.ok ? 'ok' : 'err'}`}>
+          {st.error ? st.error : <>HTTP {st.status}{st.snippet ? <pre>{st.snippet.slice(0, 500)}</pre> : null}</>}
+        </span>
+      )}
+    </span>
+  )
+}
+
 export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, onDeleted, onUpdated }) {
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState(null)
@@ -219,17 +254,32 @@ function Card({ s, isAdmin, dev, busy, onBorrar, onReindex }) {
           </div>
         )}
 
-        {dev && (s.api?.tiene || (s.endpoints || []).length > 0) && (
+        {dev && (s.api?.tiene || (s.endpoints || []).length > 0 || s.api?.potencial) && (
           <div className="api-block" onClick={stop}>
             <button className="link-mini" onClick={() => setOpenApi((v) => !v)}>
               {openApi ? 'Ocultar API' : '⚙ Ver API'}
             </button>
             {openApi && (
               <div className="api-panel">
-                {s.api?.base_url && <div><span className="api-k">Base</span> <code>{s.api.base_url}</code></div>}
+                {s.api?.tiene && (
+                  <div className="api-verif">
+                    {s.api.verificada
+                      ? <span className="ok">API responde · HTTP {s.api.verificada_status}</span>
+                      : s.api.verificada_status === 0
+                        ? <span className="err">No respondió al verificar</span>
+                        : <span className="muted">Sin verificar</span>}
+                  </div>
+                )}
+                {!s.api?.tiene && s.api?.potencial && (
+                  <div className="api-verif"><span className="warn">Podría exponer API</span>{s.api.potencial_motivo ? ` · ${s.api.potencial_motivo}` : ''}</div>
+                )}
+                {s.api?.base_url && <div><span className="api-k">Base</span> <code>{s.api.base_url}</code> <ApiProbe url={s.api.base_url} /></div>}
                 <div><span className="api-k">Auth</span> {s.api?.auth || 'desconocida'}</div>
                 {(s.endpoints || []).length > 0 && (
-                  <ul className="api-eps">{s.endpoints.map((e, i) => <li key={i}><code>{e}</code></li>)}</ul>
+                  <ul className="api-eps">{s.endpoints.map((e, i) => {
+                    const u = probeUrlFor(e, s.api?.base_url)
+                    return <li key={i}><code>{e}</code>{u && <ApiProbe url={u} />}</li>
+                  })}</ul>
                 )}
                 {s.api?.ejemplo && <pre className="api-ej">{s.api.ejemplo}</pre>}
                 {(s.funcionalidades || []).length > 0 && (
