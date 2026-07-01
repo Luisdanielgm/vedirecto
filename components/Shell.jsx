@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import DirectorioPanel from './DirectorioPanel'
 import PreviewCard from './PreviewCard'
+import SiteAvatar from './SiteAvatar'
 import { createClient } from '../lib/supabase/client'
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -21,6 +22,7 @@ export default function Shell({ sitios: inicial, noticias }) {
   const [modal, setModal] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [dev, setDev] = useState(false)
+  const [nvis, setNvis] = useState(10)
 
   useEffect(() => {
     fetch('/api/me')
@@ -76,9 +78,14 @@ export default function Shell({ sitios: inicial, noticias }) {
         <section>
           <h1 className="headline">Lo que está pasando</h1>
           <div className="list">
-            {noticias.map((n) => <NewsCard key={n.id} n={n} />)}
+            {noticias.slice(0, nvis).map((n) => <NewsCard key={n.id} n={n} />)}
             {noticias.length === 0 && <p className="empty">Todavía no hay noticias.</p>}
           </div>
+          {noticias.length > nvis && (
+            <button className="load-more" onClick={() => setNvis((v) => v + 10)}>
+              Ver más noticias <span>{noticias.length - nvis}</span>
+            </button>
+          )}
         </section>
       )}
 
@@ -249,9 +256,7 @@ function PreviewBlock({ data, busy, onConfirm, onBack }) {
 
 // Card de noticia: muestra el medio (con favicon) y la fecha; toda la card abre la nota.
 function NewsCard({ n }) {
-  const host = hostOf(n.url)
-  const source = n.fuente || host
-  const favicon = host ? `https://www.google.com/s2/favicons?domain=${host}&sz=64` : ''
+  const source = n.fuente || hostOf(n.url)
   const fecha = fmtFecha(n.fecha)
   const open = () => { if (n.url) window.open(n.url, '_blank', 'noopener,noreferrer') }
   return (
@@ -264,7 +269,7 @@ function NewsCard({ n }) {
     >
       {(source || fecha) && (
         <div className="news-top">
-          {favicon && <img className="favicon" src={favicon} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} />}
+          <SiteAvatar url={n.url} name={source} />
           {source && <span className="news-source">{source}</span>}
           {fecha && <span className="fecha">{fecha}</span>}
         </div>

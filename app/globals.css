@@ -96,7 +96,9 @@ a { color: inherit; text-decoration: none; }
 .card-link:hover { border-color: var(--border-strong); }
 .card-body { flex: 1; min-width: 0; padding: 14px 16px; }
 .card-head-row { display: flex; align-items: center; gap: 8px; }
-.favicon { width: 18px; height: 18px; flex-shrink: 0; border-radius: 4px; }
+.avatar { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 5px; overflow: hidden; }
+.avatar-letter { font-size: 11px; font-weight: 700; line-height: 1; color: rgba(0,0,0,.78); }
+.avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity .2s ease; }
 .card h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.3; }
 .card .cats { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .cat-chip { font-size: 10.5px; padding: 1px 8px; border-radius: 999px; color: var(--c, var(--muted)); border: 1px solid var(--c, var(--border)); background: color-mix(in srgb, var(--c, transparent) 12%, transparent); white-space: nowrap; }
@@ -129,6 +131,11 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 680px) { .grid2 { grid-template-columns: 1fr; } }
 .empty { color: var(--muted); font-size: 14px; padding: 30px 0; text-align: center; }
+
+/* --- Botón "mostrar más" (paginación incremental) --- */
+.load-more { display: block; margin: 22px auto 0; padding: 10px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; color: var(--text); font-size: 13.5px; font-weight: 600; cursor: pointer; transition: border-color .15s ease; }
+.load-more:hover { border-color: var(--border-strong); }
+.load-more span { color: var(--muted); font-weight: 400; margin-left: 5px; }
 
 /* --- Noticias --- */
 .news-card { cursor: pointer; }

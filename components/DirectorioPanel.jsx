@@ -1,5 +1,8 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import SiteAvatar from './SiteAvatar'
+
+const PAGE = 12
 
 const norm = (s) =>
   (s ?? '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -16,6 +19,7 @@ export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, 
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState(null)
   const [busyId, setBusyId] = useState(null)
+  const [visible, setVisible] = useState(PAGE)
 
   const borrar = async (s) => {
     if (!confirm(`¿Borrar "${s.nombre}" del directorio?`)) return
@@ -64,6 +68,10 @@ export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, 
     })
   }, [sitios, query, cat])
 
+  // Al cambiar búsqueda o categoría, volver a la primera página.
+  useEffect(() => { setVisible(PAGE) }, [query, cat])
+  const mostrados = filtered.slice(0, visible)
+
   return (
     <section>
       <h1 className="headline">Sitios que ayudan</h1>
@@ -104,7 +112,7 @@ export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, 
       )}
 
       <div className="grid2">
-        {filtered.map((s) => (
+        {mostrados.map((s) => (
           <Card
             key={s.id ?? s.url}
             s={s}
@@ -117,6 +125,11 @@ export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, 
         ))}
         {filtered.length === 0 && <p className="empty">No hay sitios todavía. Agregá el primero con “+ Agregar sitio”.</p>}
       </div>
+      {filtered.length > visible && (
+        <button className="load-more" onClick={() => setVisible((v) => v + PAGE)}>
+          Mostrar más <span>{filtered.length - visible}</span>
+        </button>
+      )}
     </section>
   )
 }
@@ -141,9 +154,6 @@ function Card({ s, isAdmin, dev, busy, onBorrar, onReindex }) {
   const stop = (e) => e.stopPropagation()
   const tags = s.tags || []
   const cats = s.categorias || []
-  let host = ''
-  try { host = new URL(s.url).hostname } catch {}
-  const favicon = host ? `https://www.google.com/s2/favicons?domain=${host}&sz=64` : ''
   const shownTags = openTags ? tags : tags.slice(0, 3)
   const longDesc = (s.descripcion || '').length > 120
 
@@ -157,9 +167,7 @@ function Card({ s, isAdmin, dev, busy, onBorrar, onReindex }) {
     >
       <div className="card-body">
         <div className="card-head-row">
-          {favicon && (
-            <img className="favicon" src={favicon} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-          )}
+          <SiteAvatar url={s.url} name={s.nombre} />
           <h3>{s.nombre}</h3>
         </div>
         {cats.length > 0 && (
