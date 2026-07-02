@@ -1,0 +1,18 @@
+name: Refrescar noticias
+
+# Dispara el crawler de noticias cada 3 horas (y con botón manual).
+# Requiere el secret de repo CRON_SECRET (mismo valor que el env en Dokploy).
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger crawler
+        run: |
+          curl -sS -X POST "https://vedirecto.es/api/cron/noticias" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            --fail-with-body
