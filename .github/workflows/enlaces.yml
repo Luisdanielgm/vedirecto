@@ -1,0 +1,19 @@
+name: Revisar enlaces
+
+# Chequea semanalmente que los sitios del directorio sigan respondiendo y marca
+# los caídos (visibles en /admin). No despublica nada: lo decide el admin.
+# Requiere el secret de repo CRON_SECRET (mismo valor que el env en Dokploy).
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # lunes 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger link check
+        run: |
+          curl -sS -X POST "https://vedirecto.es/api/cron/enlaces" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            --fail-with-body

@@ -2,6 +2,10 @@
 import { useEffect, useState } from 'react'
 import PreviewCard from '../../components/PreviewCard'
 
+// Caído = no conecta / no existe / servidor roto. Un 403/401/429 NO cuenta
+// (bloqueo de bots). Debe coincidir con esCaido() de lib/link-check.js.
+const esCaido = (st) => st === 0 || st === 404 || st === 410 || st >= 500
+
 // Resumen "agregado: 3 · saltado: 2 · duplicado: 1" para el cierre de la cola.
 function resumenEstados(res) {
   const c = {}
@@ -28,6 +32,7 @@ export default function AdminPage() {
   const [fuenteUrl, setFuenteUrl] = useState('')
   const [fuenteNombre, setFuenteNombre] = useState('')
   const [refrescando, setRefrescando] = useState(false)
+  const [revisando, setRevisando] = useState(false)
   // Cola de revisión 1-por-1 del batch (analiza lazy cada URL al llegar a ella).
   const [colaUrls, setColaUrls] = useState(null) // array activo, o null = inactiva
   const [colaIdx, setColaIdx] = useState(0)
@@ -98,6 +103,20 @@ export default function AdminPage() {
       } else alert(d.error || 'No se pudo refrescar.')
     } finally {
       setRefrescando(false)
+    }
+  }
+
+  const revisarEnlaces = async () => {
+    setRevisando(true)
+    try {
+      const r = await fetch('/api/cron/enlaces', { method: 'POST' })
+      const d = await r.json().catch(() => ({}))
+      if (r.ok) {
+        alert(`Revisados: ${d.revisados ?? 0} · caídos: ${d.caidos ?? 0}${d.caidos ? '\n\n' + d.lista.map((x) => `• ${x.nombre} (HTTP ${x.status})`).join('\n') : ''}`)
+        loadSitios()
+      } else alert(d.error || 'No se pudo revisar.')
+    } finally {
+      setRevisando(false)
     }
   }
 
@@ -434,13 +453,21 @@ export default function AdminPage() {
       </section>
 
       <section className="admin-section">
-        <h2>Sitios ({sitios.length})</h2>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          Sitios ({sitios.length})
+          <button className="del" onClick={revisarEnlaces} disabled={revisando} style={{ fontSize: 13 }}>
+            {revisando ? 'Revisando…' : '↻ Revisar enlaces'}
+          </button>
+        </h2>
         <div className="list">
           {sitios.map((s) => (
             <article className="card" key={s.id}>
               <div className="row" style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                 <h3>{s.nombre}</h3>
                 <span style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  {esCaido(s.http_status) && (
+                    <span className="estado rechazado" title={`Último chequeo: ${s.ultimo_check || '—'}`}>caído {s.http_status}</span>
+                  )}
                   {s.riesgo && s.riesgo !== 'seguro' && <span className="estado">{s.riesgo}</span>}
                   <span className={`estado ${s.estado}`}>{s.estado}</span>
                 </span>
