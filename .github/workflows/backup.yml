@@ -1,0 +1,39 @@
+name: Backup off-box
+
+# Baja un snapshot fresco del SQLite, lo CIFRA (AES-256) y lo guarda como artifact.
+# Diario ~01:00 hora Venezuela (05:00 UTC) + botón manual.
+# El repo es público, así que el artifact es descargable por cualquiera → por eso
+# se cifra: sin BACKUP_KEY el archivo es basura. Nunca subir el .sqlite en crudo.
+#
+# Secrets de repo requeridos:
+#   CRON_SECRET  → mismo valor que el env en Dokploy (autoriza la descarga)
+#   BACKUP_KEY   → passphrase de cifrado (guardala aparte; la necesitás para restaurar)
+#
+# Restaurar:  openssl enc -d -aes-256-cbc -pbkdf2 -in vedirecto.sqlite.enc \
+#               -out vedirecto.sqlite -pass pass:TU_BACKUP_KEY
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download + encrypt snapshot
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          BACKUP_KEY: ${{ secrets.BACKUP_KEY }}
+        run: |
+          curl -sS "https://vedirecto.es/api/cron/backup/download" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            --fail-with-body -o vedirecto.sqlite
+          openssl enc -aes-256-cbc -pbkdf2 -salt \
+            -in vedirecto.sqlite -out vedirecto.sqlite.enc -pass pass:"$BACKUP_KEY"
+          rm -f vedirecto.sqlite
+          ls -la vedirecto.sqlite.enc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vedirecto-backup-${{ github.run_id }}
+          path: vedirecto.sqlite.enc
+          retention-days: 30
