@@ -32,7 +32,7 @@ jobs:
             -in vedirecto.sqlite -out vedirecto.sqlite.enc -pass pass:"$BACKUP_KEY"
           rm -f vedirecto.sqlite
           ls -la vedirecto.sqlite.enc
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: vedirecto-backup-${{ github.run_id }}
           path: vedirecto.sqlite.enc

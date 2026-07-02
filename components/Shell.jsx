@@ -35,6 +35,8 @@ export default function Shell({ sitios: inicial, noticias }) {
       .then((d) => setIsAdmin(!!d.isAdmin))
       .catch(() => {})
     setDev(localStorage.getItem('vedirecto_dev') === '1')
+    // PWA: con el service worker, el directorio abre aunque no haya señal.
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})
     try {
       fetch('/api/track', {
         method: 'POST',
