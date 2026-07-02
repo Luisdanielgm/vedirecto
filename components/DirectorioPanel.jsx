@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import SiteAvatar from './SiteAvatar'
+import { compartir } from '../lib/share'
 
 const PAGE = 12
 
@@ -183,7 +184,16 @@ export default function DirectorioPanel({ sitios, isAdmin = false, dev = false, 
             onReindex={() => reindexar(s)}
           />
         ))}
-        {filtered.length === 0 && <p className="empty">No hay sitios todavía. Agregá el primero con “+ Agregar sitio”.</p>}
+        {filtered.length === 0 && (
+          sitios.length === 0 ? (
+            <p className="empty">No hay sitios todavía. Agregá el primero con “+ Agregar sitio”.</p>
+          ) : (
+            <p className="empty">
+              Sin resultados{query ? <> para “{query}”</> : cat ? <> en {cat}</> : null}.{' '}
+              <button className="link-mini" onClick={() => { setQuery(''); setCat(null) }}>Limpiar filtros</button>
+            </p>
+          )
+        )}
       </div>
       {filtered.length > visible && (
         <button className="load-more" onClick={() => setVisible((v) => v + PAGE)}>
@@ -251,6 +261,9 @@ function Card({ s, isAdmin, dev, busy, onBorrar, onReindex }) {
                 {openTags ? '− menos' : `+${tags.length - 3}`}
               </button>
             )}
+            <button className="share-mini" onClick={(e) => { stop(e); compartir({ titulo: s.nombre, url: s.url }) }}>
+              ↗ Compartir
+            </button>
           </div>
         )}
 
